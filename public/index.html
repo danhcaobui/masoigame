@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ma Sói Online</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap');
+
+    :root {
+      --ink:    #1a1410;
+      --parch:  #f0e8d8;
+      --dim:    #7a6a54;
+      --blood:  #8b1a1a;
+      --gold:   #c9992a;
+      --shadow: rgba(0,0,0,0.45);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Crimson Pro', Georgia, serif;
+      background: var(--ink);
+      color: var(--parch);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Header ── */
+    header {
+      width: 100%;
+      text-align: center;
+      padding: 2.5rem 1rem 1.5rem;
+      border-bottom: 1px solid #3a2e20;
+    }
+    header h1 {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: .08em;
+      color: var(--parch);
+    }
+    header h1 span { color: var(--blood); }
+    header p {
+      margin-top: .4rem;
+      color: var(--dim);
+      font-style: italic;
+      font-size: 1.05rem;
+    }
+
+    /* ── Layout ── */
+    main {
+      width: 100%;
+      max-width: 900px;
+      padding: 2rem 1rem 3rem;
+    }
+
+    /* ── Màn hình nhập tên / vào phòng ── */
+    #man-hinh-vao {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.8rem;
+      padding-top: 1rem;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: #24190f;
+      border: 1px solid #3d2e1a;
+      border-radius: 4px;
+      padding: 1.8rem 2rem;
+    }
+    .card h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.1rem;
+      letter-spacing: .06em;
+      color: var(--gold);
+      margin-bottom: 1.2rem;
+    }
+
+    label {
+      display: block;
+      font-size: .95rem;
+      color: var(--dim);
+      margin-bottom: .35rem;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: .65rem .9rem;
+      background: #0f0a04;
+      border: 1px solid #4a3820;
+      border-radius: 3px;
+      color: var(--parch);
+      font-family: inherit;
+      font-size: 1.05rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input[type="text"]:focus { border-color: var(--gold); }
+    input[type="text"]::placeholder { color: #4a3820; }
+
+    .btn {
+      display: inline-block;
+      width: 100%;
+      margin-top: 1rem;
+      padding: .7rem 1.2rem;
+      background: var(--blood);
+      color: var(--parch);
+      border: none;
+      border-radius: 3px;
+      font-family: 'Cinzel', serif;
+      font-size: .95rem;
+      font-weight: 600;
+      letter-spacing: .05em;
+      cursor: pointer;
+      transition: background .2s, transform .1s;
+    }
+    .btn:hover  { background: #a82020; }
+    .btn:active { transform: scale(.98); }
+    .btn.outline {
+      background: transparent;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+    }
+    .btn.outline:hover { background: #3a2800; }
+
+    .divider {
+      text-align: center;
+      color: var(--dim);
+      font-style: italic;
+      font-size: .9rem;
+      position: relative;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 38%;
+      height: 1px;
+      background: #3a2e20;
+    }
+    .divider::before { left: 0; }
+    .divider::after  { right: 0; }
+
+    /* ── Lỗi ── */
+    #thong-bao-loi {
+      display: none;
+      background: #3d0f0f;
+      border: 1px solid var(--blood);
+      color: #e8a0a0;
+      padding: .6rem 1rem;
+      border-radius: 3px;
+      font-size: .95rem;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+    }
+
+    /* ── Phòng chờ ── */
+    #man-hinh-phong { display: none; }
+
+    .phong-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #3a2e20;
+    }
+    .phong-header h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.3rem;
+      color: var(--parch);
+    }
+    .ma-phong {
+      background: #3a2800;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      padding: .35rem .9rem;
+      border-radius: 3px;
+      font-family: 'Cinzel', serif;
+      font-size: 1.3rem;
+      letter-spacing: .2em;
+      cursor: pointer;
+      title: "Nhấn để sao chép";
+    }
+    .ma-phong:hover { background: #4d3700; }
+    .copy-hint { font-size: .8rem; color: var(--dim); font-style: italic; }
+
+    /* ── Lưới người chơi ── */
+    #luoi-nguoi-choi {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: .75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .the-nguoi-choi {
+      background: #1e1408;
+      border: 1px solid #3a2e20;
+      border-radius: 3px;
+      padding: .9rem .75rem;
+      text-align: center;
+      animation: fade-in .3s ease;
+    }
+    .the-nguoi-choi .avatar {
+      font-size: 2rem;
+      line-height: 1;
+      margin-bottom: .4rem;
+    }
+    .the-nguoi-choi .ten {
+      font-size: .95rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .the-nguoi-choi .badge {
+      margin-top: .3rem;
+      font-size: .75rem;
+      color: var(--gold);
+      font-style: italic;
+    }
+    .the-nguoi-choi.la-toi { border-color: var(--gold); }
+
+    .slot-trong {
+      background: #130e06;
+      border: 1px dashed #2e2212;
+      border-radius: 3px;
+      padding: .9rem .75rem;
+      text-align: center;
+      color: #2e2212;
+      font-style: italic;
+      font-size: .85rem;
+    }
+
+    @keyframes fade-in {
+      from { opacity: 0; transform: scale(.95); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* ── Status bar ── */
+    #status-bar {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      color: var(--dim);
+      font-style: italic;
+      font-size: .95rem;
+      margin-bottom: 1.2rem;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; }
+
+    /* ── Nút bắt đầu ── */
+    #btn-bat-dau {
+      display: none;
+      max-width: 280px;
+    }
+
+    /* ── Chat ── */
+    .chat-box {
+      background: #130e06;
+      border: 1px solid #3a2e20;
+      border-radius: 4px;
+      margin-top: 1.5rem;
+      overflow: hidden;
+    }
+    .chat-box h3 {
+      font-family: 'Cinzel', serif;
+      font-size: .9rem;
+      color: var(--dim);
+      padding: .6rem 1rem;
+      border-bottom: 1px solid #3a2e20;
+      letter-spacing: .05em;
+    }
+    #danh-sach-tin { 
+      height: 180px;
+      overflow-y: auto;
+      padding: .75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+    }
+    #danh-sach-tin::-webkit-scrollbar { width: 4px; }
+    #danh-sach-tin::-webkit-scrollbar-track { background: #0a0602; }
+    #danh-sach-tin::-webkit-scrollbar-thumb { background: #3a2e20; border-radius: 2px; }
+
+    .tin-nhan {
+      font-size: .95rem;
+      line-height: 1.4;
+    }
+    .tin-nhan .nguoi { color: var(--gold); font-weight: 600; }
+    .tin-nhan .gio { color: var(--dim); font-size: .8rem; }
+    .tin-nhan.he-thong { color: var(--dim); font-style: italic; }
+
+    .chat-input {
+      display: flex;
+      border-top: 1px solid #3a2e20;
+    }
+    .chat-input input {
+      flex: 1;
+      border: none;
+      border-radius: 0;
+      background: #0a0602;
+    }
+    .chat-input button {
+      width: auto;
+      margin: 0;
+      border-radius: 0;
+      padding: .7rem 1.2rem;
+      font-size: .85rem;
+    }
+
+    /* ── Màn hình nhận vai ── */
+    #man-hinh-vai {
+      display: none;
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+    #man-hinh-vai .vai-icon { font-size: 5rem; margin-bottom: 1rem; }
+    #man-hinh-vai h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.8rem;
+      color: var(--gold);
+      margin-bottom: .5rem;
+    }
+    #man-hinh-vai p { color: var(--dim); font-style: italic; max-width: 360px; margin: 0 auto; }
+
+    /* ── Mobile ── */
+    @media (max-width: 500px) {
+      .card { padding: 1.4rem 1.2rem; }
+      #luoi-nguoi-choi { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>MA <span>SÓI</span> ONLINE</h1>
+  <p>Ai là kẻ ẩn náu trong bóng tối?</p>
+</header>
+
+<main>
+
+  <!-- MÀN HÌNH VÀO PHÒNG -->
+  <div id="man-hinh-vao">
+    <div id="thong-bao-loi"></div>
+
+    <div class="card">
+      <h2>TẠO PHÒNG MỚI</h2>
+      <label for="ten-tao">Tên của bạn</label>
+      <input id="ten-tao" type="text" placeholder="Nhập tên hiển thị..." maxlength="16" />
+      <button class="btn" onclick="taoPhong()">Tạo phòng</button>
+    </div>
+
+    <div class="divider">hoặc</div>
+
+    <div class="card">
+      <h2>VÀO PHÒNG</h2>
+      <label for="ten-vao">Tên của bạn</label>
+      <input id="ten-vao" type="text" placeholder="Nhập tên hiển thị..." maxlength="16" />
+      <label for="ma-vao" style="margin-top:.8rem">Mã phòng</label>
+      <input id="ma-vao" type="text" placeholder="VD: ABCD" maxlength="4"
+             oninput="this.value = this.value.toUpperCase()" />
+      <button class="btn outline" onclick="vaoPhong()">Vào phòng</button>
+    </div>
+  </div>
+
+  <!-- MÀN HÌNH PHÒNG CHỜ -->
+  <div id="man-hinh-phong">
+    <div class="phong-header">
+      <div>
+        <h2 id="tieu-de-phong">Phòng chờ</h2>
+        <span class="copy-hint">Nhấn mã để sao chép</span>
+      </div>
+      <span class="ma-phong" id="hien-ma-phong" onclick="saoChepMa()" title="Sao chép mã phòng"></span>
+    </div>
+
+    <div id="status-bar">
+      <div class="dot"></div>
+      <span id="status-text">Đang chờ người chơi...</span>
+    </div>
+
+    <div id="luoi-nguoi-choi"></div>
+
+    <button id="btn-bat-dau" class="btn" onclick="batDauGame()">
+      ⚔️ Bắt đầu ván đấu
+    </button>
+
+    <div class="chat-box">
+      <h3>💬 PHÒNG CHỜ</h3>
+      <div id="danh-sach-tin"></div>
+      <div class="chat-input">
+        <input id="o-chat" type="text" placeholder="Nhắn tin..."
+               maxlength="120" onkeydown="if(event.key==='Enter') guiTin()" />
+        <button class="btn" onclick="guiTin()">Gửi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MÀN HÌNH NHẬN VAI -->
+  <div id="man-hinh-vai">
+    <div id="vai-icon" class="vai-icon"></div>
+    <h2 id="vai-ten"></h2>
+    <p id="vai-mo-ta"></p>
+  </div>
+
+</main>
+
+<script>
+  const socket = io();
+
+  // Trạng thái client
+  let tenCuaToi = '';
+  let maPhongCuaToi = '';
+  let laHost = false;
+
+  const moTaVai = {
+    '🐺 Ma Sói':   'Mỗi đêm, bạn và đồng đội chọn một dân làng để hạ thủ. Đừng để bị lộ!',
+    '🧙 Thầy Lang': 'Mỗi đêm, bạn có thể cứu một người khỏi bị giết — kể cả chính mình.',
+    '🔮 Tiên Tri':  'Mỗi đêm, bạn có thể điều tra một người và biết họ là Ma Sói hay không.',
+    '🧑 Dân Làng':  'Bạn không có kỹ năng đặc biệt, nhưng lá phiếu của bạn rất quan trọng!',
+  };
+
+  // ── Tạo phòng ──────────────────────────────────────────
+  function taoPhong() {
+    const ten = document.getElementById('ten-tao').value.trim();
+    if (!ten) return hienLoi('Vui lòng nhập tên của bạn!');
+    tenCuaToi = ten;
+    socket.emit('tao_phong', { ten });
+  }
+
+  // ── Vào phòng ──────────────────────────────────────────
+  function vaoPhong() {
+    const ten = document.getElementById('ten-vao').value.trim();
+    const ma  = document.getElementById('ma-vao').value.trim();
+    if (!ten) return hienLoi('Vui lòng nhập tên của bạn!');
+    if (ma.length !== 4) return hienLoi('Mã phòng phải có 4 ký tự!');
+    tenCuaToi = ten;
+    socket.emit('vao_phong', { ten, maPhong: ma });
+  }
+
+  // ── Bắt đầu game ───────────────────────────────────────
+  function batDauGame() {
+    socket.emit('bat_dau_game');
+  }
+
+  // ── Chat ───────────────────────────────────────────────
+  function guiTin() {
+    const o = document.getElementById('o-chat');
+    const nd = o.value.trim();
+    if (!nd) return;
+    socket.emit('gui_tin_nhan', { noiDung: nd });
+    o.value = '';
+  }
+
+  // ── Sao chép mã phòng ──────────────────────────────────
+  function saoChepMa() {
+    navigator.clipboard.writeText(maPhongCuaToi).then(() => {
+      const el = document.getElementById('hien-ma-phong');
+      const old = el.textContent;
+      el.textContent = '✓ ĐÃ SAO CHÉP';
+      setTimeout(() => el.textContent = old, 1500);
+    });
+  }
+
+  // ── Hiển thị lỗi ───────────────────────────────────────
+  function hienLoi(msg) {
+    const el = document.getElementById('thong-bao-loi');
+    el.textContent = '⚠ ' + msg;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 3500);
+  }
+
+  // ── Cập nhật lưới người chơi ───────────────────────────
+  const avatars = ['🧑','👩','🧔','👴','👩‍🦰','🧑‍🦱','👩‍🦳','👨‍🦲','🧑‍🦰','👩‍🦱','🧑‍🦳','👨‍🦰'];
+
+  function capNhatLuoi(players) {
+    const luoi = document.getElementById('luoi-nguoi-choi');
+    luoi.innerHTML = '';
+
+    players.forEach((p, i) => {
+      const div = document.createElement('div');
+      div.className = 'the-nguoi-choi' + (p.ten === tenCuaToi ? ' la-toi' : '');
+      div.innerHTML = `
+        <div class="avatar">${avatars[i % avatars.length]}</div>
+        <div class="ten">${escHtml(p.ten)}</div>
+        <div class="badge">${p.isHost ? '⭐ Chủ phòng' : (p.ten === tenCuaToi ? 'Bạn' : '')}</div>
+      `;
+      luoi.appendChild(div);
+    });
+
+    // Slot trống
+    const soTrang = Math.max(0, 4 - players.length);
+    for (let i = 0; i < soTrang; i++) {
+      const div = document.createElement('div');
+      div.className = 'slot-trong';
+      div.textContent = 'Chờ...';
+      luoi.appendChild(div);
+    }
+
+    // Cập nhật status
+    document.getElementById('status-text')
+      .textContent = `${players.length} người — cần ít nhất 4 để bắt đầu`;
+
+    // Hiện nút bắt đầu nếu là host và đủ người
+    const btn = document.getElementById('btn-bat-dau');
+    btn.style.display = (laHost && players.length >= 4) ? 'block' : 'none';
+  }
+
+  function themTin(html, laHeThong = false) {
+    const ds = document.getElementById('danh-sach-tin');
+    const div = document.createElement('div');
+    div.className = 'tin-nhan' + (laHeThong ? ' he-thong' : '');
+    div.innerHTML = html;
+    ds.appendChild(div);
+    ds.scrollTop = ds.scrollHeight;
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Chuyển sang màn hình phòng ─────────────────────────
+  function hienPhong(maPhong, players, isHostParam) {
+    maPhongCuaToi = maPhong;
+    laHost = isHostParam;
+    document.getElementById('man-hinh-vao').style.display = 'none';
+    document.getElementById('man-hinh-phong').style.display = 'block';
+    document.getElementById('hien-ma-phong').textContent = maPhong;
+    document.getElementById('tieu-de-phong').textContent =
+      isHostParam ? 'Phòng của bạn' : 'Phòng chờ';
+    capNhatLuoi(players);
+    themTin(`— Bạn đã vào phòng <strong>${maPhong}</strong> —`, true);
+  }
+
+  // ── Socket events ───────────────────────────────────────
+  socket.on('vao_phong_thanh_cong', ({ maPhong, players, isHost }) => {
+    hienPhong(maPhong, players, isHost);
+  });
+
+  socket.on('nguoi_choi_moi', ({ players, ten }) => {
+    capNhatLuoi(players);
+    themTin(`— <strong>${escHtml(ten)}</strong> đã vào phòng —`, true);
+  });
+
+  socket.on('nguoi_choi_roi', ({ ten, players }) => {
+    capNhatLuoi(players);
+    themTin(`— <strong>${escHtml(ten)}</strong> đã rời phòng —`, true);
+  });
+
+  socket.on('tro_thanh_host', () => {
+    laHost = true;
+    document.getElementById('tieu-de-phong').textContent = 'Phòng của bạn';
+    themTin('— Bạn đã trở thành chủ phòng —', true);
+  });
+
+  socket.on('tin_nhan_moi', ({ ten, noiDung, thoiGian }) => {
+    const laToi = ten === tenCuaToi;
+    themTin(`<span class="nguoi">${escHtml(ten)}</span> 
+             <span class="gio">${thoiGian}</span><br>${escHtml(noiDung)}`);
+  });
+
+  socket.on('game_bat_dau', ({ players }) => {
+    themTin('— ⚔️ Ván đấu bắt đầu! Hãy chờ nhận vai —', true);
+  });
+
+  socket.on('nhan_vai', ({ vai }) => {
+    // Chuyển sang màn hình vai sau 1.5s
+    setTimeout(() => {
+      document.getElementById('man-hinh-phong').style.display = 'none';
+      const icon = vai.split(' ')[0];
+      const ten  = vai.split(' ').slice(1).join(' ');
+      document.getElementById('vai-icon').textContent = icon;
+      document.getElementById('vai-ten').textContent  = ten;
+      document.getElementById('vai-mo-ta').textContent = moTaVai[vai] || '';
+      document.getElementById('man-hinh-vai').style.display = 'block';
+    }, 1500);
+  });
+
+  socket.on('loi', (msg) => {
+    hienLoi(msg);
+  });
+
+  // Enter để vào phòng nhanh
+  document.getElementById('ten-tao').addEventListener('keydown', e => { if(e.key==='Enter') taoPhong(); });
+  document.getElementById('ma-vao').addEventListener('keydown', e => { if(e.key==='Enter') vaoPhong(); });
+</script>
+</body>
+</html>
