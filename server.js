@@ -87,42 +87,48 @@ const THU_TU_DEM = [
 // PHÂN VAI THEO SỐ NGƯỜI
 // ═══════════════════════════════════════════════════════
 function tinhSoVai(soNguoi) {
-  let soSoi, soPhe3;
-  if (soNguoi <= 6)       { soSoi = 1; soPhe3 = 0; }
-  else if (soNguoi <= 9)  { soSoi = 2; soPhe3 = 1; }
-  else if (soNguoi <= 12) { soSoi = 3; soPhe3 = 1; }
-  else if (soNguoi <= 16) { soSoi = 4; soPhe3 = 1; }
-  else if (soNguoi <= 22) { soSoi = 5; soPhe3 = 2; }
-  else if (soNguoi <= 30) { soSoi = 7; soPhe3 = 2; }
-  else if (soNguoi <= 40) { soSoi = 9; soPhe3 = 3; }
-  else                    { soSoi = 11; soPhe3 = 3; }
-  return { soSoi, soPhe3, soDan: soNguoi - soSoi - soPhe3 };
+  let soSoi, soPhe3, soDanThuong;
+  if (soNguoi === 5)       { soSoi = 1; soPhe3 = 0; soDanThuong = 2; }
+  else if (soNguoi === 6)  { soSoi = 2; soPhe3 = 1; soDanThuong = 1; }
+  else if (soNguoi <= 8)   { soSoi = 2; soPhe3 = 1; soDanThuong = 1; }
+  else if (soNguoi <= 10)  { soSoi = 3; soPhe3 = 1; soDanThuong = 1; }
+  else if (soNguoi <= 13)  { soSoi = 4; soPhe3 = 2; soDanThuong = 1; }
+  else if (soNguoi <= 16)  { soSoi = 5; soPhe3 = 2; soDanThuong = 2; }
+  else if (soNguoi <= 20)  { soSoi = 6; soPhe3 = 2; soDanThuong = 2; }
+  else if (soNguoi <= 25)  { soSoi = 7; soPhe3 = 3; soDanThuong = 3; }
+  else if (soNguoi <= 30)  { soSoi = 9; soPhe3 = 3; soDanThuong = 4; }
+  else if (soNguoi <= 40)  { soSoi = 11; soPhe3 = 4; soDanThuong = 5; }
+  else                     { soSoi = 13; soPhe3 = 4; soDanThuong = 6; }
+  return { soSoi, soPhe3, soDanThuong, soDan: soNguoi - soSoi - soPhe3 };
 }
 
 function phatVaiNgauNhien(soNguoi) {
-  const { soSoi, soPhe3, soDan } = tinhSoVai(soNguoi);
+  const { soSoi, soPhe3, soDanThuong } = tinhSoVai(soNguoi);
+  const soDanDacBiet = soNguoi - soSoi - soPhe3 - soDanThuong;
 
   const danhSachSoi  = Object.keys(VAI_TRO).filter(v => VAI_TRO[v].phe === 'soi');
   const danhSachPhe3 = Object.keys(VAI_TRO).filter(v => VAI_TRO[v].phe === 'khac');
   const danhSachDan  = Object.keys(VAI_TRO).filter(v => VAI_TRO[v].phe === 'dan' && v !== 'Dân làng');
 
-  const tron = arr => arr.sort(() => Math.random() - 0.5);
+  const tron = arr => [...arr].sort(() => Math.random() - 0.5);
 
-  // Luôn có Ma sói, còn lại random trong phe sói
+  // Phe sói: luôn có ít nhất 1 Ma sói
   const soiChon = ['Ma sói', ...tron(danhSachSoi.filter(v => v !== 'Ma sói')).slice(0, soSoi - 1)];
   const phe3Chon = tron(danhSachPhe3).slice(0, soPhe3);
 
   // Dân đặc biệt: ưu tiên Tiên tri, Phù thủy, Vệ sĩ
-  const danUuTien = ['Tiên tri', 'Phù thủy', 'Vệ sĩ'];
+  const danUuTien = ['Tiên tri', 'Phù thủy', 'Vệ sĩ'].filter(v => danhSachDan.includes(v));
   const danCon = tron(danhSachDan.filter(v => !danUuTien.includes(v)));
-  const soDanDacBiet = Math.min(soDan - 1, danUuTien.length);
-  const danChon = [
-    ...danUuTien.slice(0, soDanDacBiet),
-    ...danCon.slice(0, soDan - soDanDacBiet - 1),
-    'Dân làng', // luôn có ít nhất 1 dân thường
+  const soUuTien = Math.min(soDanDacBiet, danUuTien.length);
+  const danDacBietChon = [
+    ...danUuTien.slice(0, soUuTien),
+    ...danCon.slice(0, Math.max(0, soDanDacBiet - soUuTien)),
   ];
 
-  return tron([...soiChon, ...phe3Chon, ...danChon]).slice(0, soNguoi);
+  // Dân thường
+  const danThuongChon = Array(soDanThuong).fill('Dân làng');
+
+  return tron([...soiChon, ...phe3Chon, ...danDacBietChon, ...danThuongChon]).slice(0, soNguoi);
 }
 
 // ═══════════════════════════════════════════════════════

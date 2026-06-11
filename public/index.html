@@ -1,598 +1,699 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ma Sói</title>
-  <script src="/socket.io/socket.io.js"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap');
-
-    :root {
-      --ink:    #1a1410;
-      --parch:  #f0e8d8;
-      --dim:    #7a6a54;
-      --blood:  #8b1a1a;
-      --gold:   #c9992a;
-      --shadow: rgba(0,0,0,0.45);
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Crimson Pro', Georgia, serif;
-      background: var(--ink);
-      color: var(--parch);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    /* ── Header ── */
-    header {
-      width: 100%;
-      text-align: center;
-      padding: 2.5rem 1rem 1.5rem;
-      border-bottom: 1px solid #3a2e20;
-    }
-    header h1 {
-      font-family: 'Cinzel', serif;
-      font-size: clamp(2rem, 6vw, 3.5rem);
-      font-weight: 800;
-      letter-spacing: .08em;
-      color: var(--parch);
-    }
-    header h1 span { color: var(--blood); }
-    header p {
-      margin-top: .4rem;
-      color: var(--dim);
-      font-style: italic;
-      font-size: 1.05rem;
-    }
-
-    /* ── Layout ── */
-    main {
-      width: 100%;
-      max-width: 900px;
-      padding: 2rem 1rem 3rem;
-    }
-
-    /* ── Màn hình nhập tên / vào phòng ── */
-    #man-hinh-vao {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1.8rem;
-      padding-top: 1rem;
-    }
-
-    .card {
-      width: 100%;
-      max-width: 420px;
-      background: #24190f;
-      border: 1px solid #3d2e1a;
-      border-radius: 4px;
-      padding: 1.8rem 2rem;
-    }
-    .card h2 {
-      font-family: 'Cinzel', serif;
-      font-size: 1.1rem;
-      letter-spacing: .06em;
-      color: var(--gold);
-      margin-bottom: 1.2rem;
-    }
-
-    label {
-      display: block;
-      font-size: .95rem;
-      color: var(--dim);
-      margin-bottom: .35rem;
-    }
-
-    input[type="text"] {
-      width: 100%;
-      padding: .65rem .9rem;
-      background: #0f0a04;
-      border: 1px solid #4a3820;
-      border-radius: 3px;
-      color: var(--parch);
-      font-family: inherit;
-      font-size: 1.05rem;
-      outline: none;
-      transition: border-color .2s;
-    }
-    input[type="text"]:focus { border-color: var(--gold); }
-    input[type="text"]::placeholder { color: #4a3820; }
-
-    .btn {
-      display: inline-block;
-      width: 100%;
-      margin-top: 1rem;
-      padding: .7rem 1.2rem;
-      background: var(--blood);
-      color: var(--parch);
-      border: none;
-      border-radius: 3px;
-      font-family: 'Cinzel', serif;
-      font-size: .95rem;
-      font-weight: 600;
-      letter-spacing: .05em;
-      cursor: pointer;
-      transition: background .2s, transform .1s;
-    }
-    .btn:hover  { background: #a82020; }
-    .btn:active { transform: scale(.98); }
-    .btn.outline {
-      background: transparent;
-      border: 1px solid var(--gold);
-      color: var(--gold);
-    }
-    .btn.outline:hover { background: #3a2800; }
-
-    .divider {
-      text-align: center;
-      color: var(--dim);
-      font-style: italic;
-      font-size: .9rem;
-      position: relative;
-    }
-    .divider::before, .divider::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      width: 38%;
-      height: 1px;
-      background: #3a2e20;
-    }
-    .divider::before { left: 0; }
-    .divider::after  { right: 0; }
-
-    /* ── Lỗi ── */
-    #thong-bao-loi {
-      display: none;
-      background: #3d0f0f;
-      border: 1px solid var(--blood);
-      color: #e8a0a0;
-      padding: .6rem 1rem;
-      border-radius: 3px;
-      font-size: .95rem;
-      max-width: 420px;
-      width: 100%;
-      text-align: center;
-    }
-
-    /* ── Phòng chờ ── */
-    #man-hinh-phong { display: none; }
-
-    .phong-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid #3a2e20;
-    }
-    .phong-header h2 {
-      font-family: 'Cinzel', serif;
-      font-size: 1.3rem;
-      color: var(--parch);
-    }
-    .ma-phong {
-      background: #3a2800;
-      border: 1px solid var(--gold);
-      color: var(--gold);
-      padding: .35rem .9rem;
-      border-radius: 3px;
-      font-family: 'Cinzel', serif;
-      font-size: 1.3rem;
-      letter-spacing: .2em;
-      cursor: pointer;
-      title: "Nhấn để sao chép";
-    }
-    .ma-phong:hover { background: #4d3700; }
-    .copy-hint { font-size: .8rem; color: var(--dim); font-style: italic; }
-
-    /* ── Lưới người chơi ── */
-    #luoi-nguoi-choi {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: .75rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .the-nguoi-choi {
-      background: #1e1408;
-      border: 1px solid #3a2e20;
-      border-radius: 3px;
-      padding: .9rem .75rem;
-      text-align: center;
-      animation: fade-in .3s ease;
-    }
-    .the-nguoi-choi .avatar {
-      font-size: 2rem;
-      line-height: 1;
-      margin-bottom: .4rem;
-    }
-    .the-nguoi-choi .ten {
-      font-size: .95rem;
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .the-nguoi-choi .badge {
-      margin-top: .3rem;
-      font-size: .75rem;
-      color: var(--gold);
-      font-style: italic;
-    }
-    .the-nguoi-choi.la-toi { border-color: var(--gold); }
-
-    .slot-trong {
-      background: #130e06;
-      border: 1px dashed #2e2212;
-      border-radius: 3px;
-      padding: .9rem .75rem;
-      text-align: center;
-      color: #2e2212;
-      font-style: italic;
-      font-size: .85rem;
-    }
-
-    @keyframes fade-in {
-      from { opacity: 0; transform: scale(.95); }
-      to   { opacity: 1; transform: scale(1); }
-    }
-
-    /* ── Status bar ── */
-    #status-bar {
-      display: flex;
-      align-items: center;
-      gap: .5rem;
-      color: var(--dim);
-      font-style: italic;
-      font-size: .95rem;
-      margin-bottom: 1.2rem;
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; }
-
-    /* ── Nút bắt đầu ── */
-    #btn-bat-dau {
-      display: none;
-      max-width: 280px;
-    }
-
-    /* ── Chat ── */
-    .chat-box {
-      background: #130e06;
-      border: 1px solid #3a2e20;
-      border-radius: 4px;
-      margin-top: 1.5rem;
-      overflow: hidden;
-    }
-    .chat-box h3 {
-      font-family: 'Cinzel', serif;
-      font-size: .9rem;
-      color: var(--dim);
-      padding: .6rem 1rem;
-      border-bottom: 1px solid #3a2e20;
-      letter-spacing: .05em;
-    }
-    #danh-sach-tin { 
-      height: 180px;
-      overflow-y: auto;
-      padding: .75rem 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: .4rem;
-    }
-    #danh-sach-tin::-webkit-scrollbar { width: 4px; }
-    #danh-sach-tin::-webkit-scrollbar-track { background: #0a0602; }
-    #danh-sach-tin::-webkit-scrollbar-thumb { background: #3a2e20; border-radius: 2px; }
-
-    .tin-nhan {
-      font-size: .95rem;
-      line-height: 1.4;
-    }
-    .tin-nhan .nguoi { color: var(--gold); font-weight: 600; }
-    .tin-nhan .gio { color: var(--dim); font-size: .8rem; }
-    .tin-nhan.he-thong { color: var(--dim); font-style: italic; }
-
-    .chat-input {
-      display: flex;
-      border-top: 1px solid #3a2e20;
-    }
-    .chat-input input {
-      flex: 1;
-      border: none;
-      border-radius: 0;
-      background: #0a0602;
-    }
-    .chat-input button {
-      width: auto;
-      margin: 0;
-      border-radius: 0;
-      padding: .7rem 1.2rem;
-      font-size: .85rem;
-    }
-
-    /* ── Màn hình nhận vai ── */
-    #man-hinh-vai {
-      display: none;
-      text-align: center;
-      padding: 3rem 1rem;
-    }
-    #man-hinh-vai .vai-icon { font-size: 5rem; margin-bottom: 1rem; }
-    #man-hinh-vai h2 {
-      font-family: 'Cinzel', serif;
-      font-size: 1.8rem;
-      color: var(--gold);
-      margin-bottom: .5rem;
-    }
-    #man-hinh-vai p { color: var(--dim); font-style: italic; max-width: 360px; margin: 0 auto; }
-
-    /* ── Mobile ── */
-    @media (max-width: 500px) {
-      .card { padding: 1.4rem 1.2rem; }
-      #luoi-nguoi-choi { grid-template-columns: repeat(3, 1fr); }
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ma Sói Online</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#120d08;--parch:#f0e8d8;--dim:#7a6a54;--blood:#8b1a1a;
+  --gold:#c9992a;--green:#2d6a3f;--night:#0a0714;--card:#1e1610;
+  --border:#3a2e20;--danger:#c0392b;--safe:#27ae60;
+}
+body{font-family:'Crimson Pro',Georgia,serif;background:var(--ink);color:var(--parch);min-height:100vh;display:flex;flex-direction:column}
+/* ── HEADER ── */
+header{text-align:center;padding:1.5rem 1rem 1rem;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#1a0f08 0%,var(--ink) 100%)}
+header h1{font-family:'Cinzel',serif;font-size:clamp(1.8rem,5vw,3rem);font-weight:800;letter-spacing:.08em}
+header h1 span{color:var(--blood)}
+header p{color:var(--dim);font-style:italic;font-size:.95rem;margin-top:.3rem}
+/* ── SCREENS ── */
+.screen{display:none;flex:1;padding:1.5rem 1rem 3rem;max-width:960px;margin:0 auto;width:100%}
+.screen.active{display:flex;flex-direction:column;gap:1.2rem}
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:1.5rem}
+.card h2{font-family:'Cinzel',serif;font-size:1rem;letter-spacing:.06em;color:var(--gold);margin-bottom:1rem}
+/* ── INPUTS ── */
+label{display:block;font-size:.9rem;color:var(--dim);margin-bottom:.3rem}
+input[type=text]{width:100%;padding:.6rem .9rem;background:#0a0602;border:1px solid #4a3820;border-radius:3px;color:var(--parch);font-family:inherit;font-size:1rem;outline:none;transition:border-color .2s}
+input[type=text]:focus{border-color:var(--gold)}
+input::placeholder{color:#3a2812}
+/* ── BUTTONS ── */
+.btn{display:inline-block;padding:.65rem 1.2rem;border:none;border-radius:3px;font-family:'Cinzel',serif;font-size:.9rem;font-weight:600;letter-spacing:.05em;cursor:pointer;transition:all .2s;width:100%;margin-top:.8rem}
+.btn-red{background:var(--blood);color:var(--parch)}.btn-red:hover{background:#a82020}
+.btn-gold{background:transparent;border:1px solid var(--gold);color:var(--gold)}.btn-gold:hover{background:#3a2800}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:#1f5230}
+.btn-gray{background:#2a2020;color:var(--dim);border:1px solid var(--border)}.btn-gray:hover{background:#3a2e20}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-sm{padding:.4rem .8rem;font-size:.8rem;margin-top:0;width:auto}
+/* ── DIVIDER ── */
+.divider{text-align:center;color:var(--dim);font-style:italic;font-size:.85rem;position:relative}
+.divider::before,.divider::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:var(--border)}
+.divider::before{left:0}.divider::after{right:0}
+/* ── ERROR ── */
+.err{display:none;background:#3d0f0f;border:1px solid var(--blood);color:#e8a0a0;padding:.6rem 1rem;border-radius:3px;font-size:.9rem;text-align:center}
+/* ── LOBBY ── */
+#lobby-screen .room-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.8rem}
+.room-code{background:#3a2800;border:1px solid var(--gold);color:var(--gold);padding:.35rem .9rem;border-radius:3px;font-family:'Cinzel',serif;font-size:1.4rem;letter-spacing:.2em;cursor:pointer}
+.room-code:hover{background:#4d3700}
+.copy-hint{font-size:.75rem;color:var(--dim);font-style:italic}
+.player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.6rem;margin:.8rem 0}
+.player-card{background:#170f08;border:1px solid var(--border);border-radius:3px;padding:.8rem .6rem;text-align:center;transition:border-color .3s}
+.player-card.ready{border-color:var(--safe)}
+.player-card.me{border-color:var(--gold)}
+.player-card .ava{font-size:1.8rem;line-height:1;margin-bottom:.3rem}
+.player-card .name{font-size:.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player-card .status{margin-top:.25rem;font-size:.75rem}
+.player-card.ready .status{color:var(--safe)}
+.player-card:not(.ready) .status{color:var(--dim)}
+.slot-empty{background:#100a04;border:1px dashed #2a1e10;border-radius:3px;padding:.8rem;text-align:center;color:#2a1e10;font-style:italic;font-size:.8rem}
+.lobby-info{display:flex;align-items:center;gap:.5rem;color:var(--dim);font-style:italic;font-size:.9rem}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--safe)}
+/* ── CHAT ── */
+.chat-box{background:#0f0a04;border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.chat-box h3{font-family:'Cinzel',serif;font-size:.85rem;color:var(--dim);padding:.55rem 1rem;border-bottom:1px solid var(--border);letter-spacing:.05em}
+.chat-msgs{height:160px;overflow-y:auto;padding:.7rem 1rem;display:flex;flex-direction:column;gap:.35rem}
+.chat-msgs::-webkit-scrollbar{width:4px}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.msg{font-size:.9rem;line-height:1.4}
+.msg .who{color:var(--gold);font-weight:600}
+.msg .when{color:var(--dim);font-size:.78rem}
+.msg.sys{color:var(--dim);font-style:italic}
+.msg.sys.dem{color:#7060a0}
+.msg.sys.ngay{color:#c09040}
+.msg.sys.nguy{color:var(--danger)}
+.msg.sys.canh_bao{color:#c07030}
+.msg.sys.info{color:var(--dim)}
+.msg.ghost{color:#806080;font-style:italic}
+.chat-input{display:flex;border-top:1px solid var(--border)}
+.chat-input input{flex:1;border:none;border-radius:0;background:#07040200;font-size:.9rem}
+.chat-input input:focus{border-color:transparent}
+.chat-input .btn{width:auto;margin:0;border-radius:0;padding:.6rem 1rem;font-size:.8rem}
+/* ── GAME SCREEN ── */
+#game-screen{gap:0}
+.game-layout{display:grid;grid-template-columns:220px 1fr;gap:1rem;flex:1;min-height:0}
+/* Sidebar */
+.sidebar{display:flex;flex-direction:column;gap:.8rem}
+.my-role-box{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:1rem;text-align:center}
+.my-role-box .role-icon{font-size:2.5rem;margin-bottom:.4rem}
+.my-role-box .role-name{font-family:'Cinzel',serif;font-size:.95rem;color:var(--gold);letter-spacing:.05em}
+.my-role-box .role-phe{font-size:.8rem;font-style:italic;color:var(--dim);margin:.2rem 0 .5rem}
+.my-role-box .role-desc{font-size:.82rem;color:var(--parch);line-height:1.5}
+.alive-box{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:1rem;flex:1;overflow-y:auto}
+.alive-box h3{font-family:'Cinzel',serif;font-size:.85rem;color:var(--dim);margin-bottom:.7rem;letter-spacing:.05em}
+.alive-list{display:flex;flex-direction:column;gap:.4rem}
+.alive-item{display:flex;align-items:center;gap:.5rem;font-size:.88rem;padding:.3rem .4rem;border-radius:3px;cursor:pointer;transition:background .2s}
+.alive-item:hover{background:#2a1e10}
+.alive-item .ai{font-size:1rem}
+.alive-item .an{flex:1}
+.alive-item.dead{opacity:.4;text-decoration:line-through;cursor:default}
+.alive-item.dead:hover{background:transparent}
+.alive-item .vote-count{font-size:.75rem;color:var(--blood);font-weight:600}
+/* Main panel */
+.main-panel{display:flex;flex-direction:column;gap:.8rem;min-height:0}
+.phase-banner{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:1rem;text-align:center}
+.phase-banner .phase-title{font-family:'Cinzel',serif;font-size:1.2rem;letter-spacing:.06em}
+.phase-banner.dem .phase-title{color:#8060c0}
+.phase-banner.ngay .phase-title{color:var(--gold)}
+.phase-banner .phase-sub{font-size:.88rem;color:var(--dim);font-style:italic;margin-top:.3rem}
+/* Action box */
+.action-box{background:#1a0f20;border:1px solid #5a3a8a;border-radius:4px;padding:1.2rem}
+.action-box h3{font-family:'Cinzel',serif;font-size:.95rem;color:#a080e0;margin-bottom:.6rem;letter-spacing:.05em}
+.action-desc{font-size:.9rem;color:var(--parch);margin-bottom:.8rem;line-height:1.5}
+.action-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.5rem;margin-bottom:.8rem}
+.action-target{background:#0f0a18;border:1px solid #3a2860;border-radius:3px;padding:.5rem .7rem;text-align:center;cursor:pointer;font-size:.88rem;transition:all .2s}
+.action-target:hover{border-color:#a080e0;background:#1e1030}
+.action-target.selected{border-color:#a080e0;background:#2a1850;color:#c0a0ff}
+.action-timer{font-size:.8rem;color:var(--dim);font-style:italic}
+/* Vote box */
+.vote-box{background:#1a1000;border:1px solid #5a3a00;border-radius:4px;padding:1.2rem}
+.vote-box h3{font-family:'Cinzel',serif;font-size:.95rem;color:var(--gold);margin-bottom:.6rem}
+.vote-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.5rem;margin-bottom:.8rem}
+.vote-target{background:#0f0a04;border:1px solid var(--border);border-radius:3px;padding:.5rem .7rem;text-align:center;cursor:pointer;font-size:.88rem;transition:all .2s}
+.vote-target:hover{border-color:var(--gold);background:#1e1400}
+.vote-target.selected{border-color:var(--blood);background:#200800;color:#ff8060}
+.vote-status{font-size:.8rem;color:var(--dim);font-style:italic}
+/* Result popup */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center}
+.overlay.show{display:flex}
+.popup{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:2rem;max-width:480px;width:90%;text-align:center}
+.popup .p-icon{font-size:4rem;margin-bottom:1rem}
+.popup h2{font-family:'Cinzel',serif;font-size:1.5rem;margin-bottom:.5rem}
+.popup p{color:var(--dim);font-style:italic;margin-bottom:1.2rem;line-height:1.6}
+.popup .role-reveal{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;margin:.8rem 0}
+.popup .rv{background:#1a1208;border:1px solid var(--border);border-radius:3px;padding:.3rem .6rem;font-size:.82rem}
+/* Info popup */
+.info-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a0f20;border:1px solid #5a3a8a;border-radius:4px;padding:1.2rem 1.5rem;z-index:90;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.8)}
+.info-popup h3{font-family:'Cinzel',serif;color:#a080e0;margin-bottom:.5rem}
+.info-popup p{font-size:.9rem;line-height:1.6;color:var(--parch)}
+.info-popup .close-btn{margin-top:.8rem;font-size:.8rem}
+/* Soi result */
+.soi-result{background:#0a1a10;border:1px solid var(--safe);border-radius:3px;padding:.6rem 1rem;font-size:.9rem;margin-top:.5rem}
+.soi-result.la-soi{background:#1a0808;border-color:var(--blood)}
+/* Mobile */
+@media(max-width:640px){
+  .game-layout{grid-template-columns:1fr}
+  .sidebar{order:2}
+  .main-panel{order:1}
+}
+</style>
 </head>
 <body>
-
 <header>
   <h1>MA <span>SÓI</span> ONLINE</h1>
   <p>Ai là kẻ ẩn náu trong bóng tối?</p>
 </header>
 
-<main>
-
-  <!-- MÀN HÌNH VÀO PHÒNG -->
-  <div id="man-hinh-vao">
-    <div id="thong-bao-loi"></div>
-
-    <div class="card">
-      <h2>TẠO PHÒNG MỚI</h2>
-      <label for="ten-tao">Tên của bạn</label>
-      <input id="ten-tao" type="text" placeholder="Nhập tên hiển thị..." maxlength="16" />
-      <button class="btn" onclick="taoPhong()">Tạo phòng</button>
-    </div>
-
-    <div class="divider">hoặc</div>
-
-    <div class="card">
-      <h2>VÀO PHÒNG</h2>
-      <label for="ten-vao">Tên của bạn</label>
-      <input id="ten-vao" type="text" placeholder="Nhập tên hiển thị..." maxlength="16" />
-      <label for="ma-vao" style="margin-top:.8rem">Mã phòng</label>
-      <input id="ma-vao" type="text" placeholder="VD: ABCD" maxlength="4"
-             oninput="this.value = this.value.toUpperCase()" />
-      <button class="btn outline" onclick="vaoPhong()">Vào phòng</button>
-    </div>
+<!-- ══ MÀNG HÌNH VÀO PHÒNG ══ -->
+<main id="entry-screen" class="screen active">
+  <div id="entry-err" class="err"></div>
+  <div class="card" style="max-width:400px;align-self:center;width:100%">
+    <h2>TẠO PHÒNG MỚI</h2>
+    <label>Tên của bạn</label>
+    <input id="ten-tao" type="text" placeholder="Nhập tên..." maxlength="16"/>
+    <button class="btn btn-red" onclick="taoPhong()">Tạo phòng</button>
   </div>
-
-  <!-- MÀN HÌNH PHÒNG CHỜ -->
-  <div id="man-hinh-phong">
-    <div class="phong-header">
-      <div>
-        <h2 id="tieu-de-phong">Phòng chờ</h2>
-        <span class="copy-hint">Nhấn mã để sao chép</span>
-      </div>
-      <span class="ma-phong" id="hien-ma-phong" onclick="saoChepMa()" title="Sao chép mã phòng"></span>
-    </div>
-
-    <div id="status-bar">
-      <div class="dot"></div>
-      <span id="status-text">Đang chờ người chơi...</span>
-    </div>
-
-    <div id="luoi-nguoi-choi"></div>
-
-    <button id="btn-bat-dau" class="btn" onclick="batDauGame()">
-      ⚔️ Bắt đầu ván đấu
-    </button>
-
-    <div class="chat-box">
-      <h3>💬 PHÒNG CHỜ</h3>
-      <div id="danh-sach-tin"></div>
-      <div class="chat-input">
-        <input id="o-chat" type="text" placeholder="Nhắn tin..."
-               maxlength="120" onkeydown="if(event.key==='Enter') guiTin()" />
-        <button class="btn" onclick="guiTin()">Gửi</button>
-      </div>
-    </div>
+  <div class="divider" style="max-width:400px;align-self:center;width:100%">hoặc</div>
+  <div class="card" style="max-width:400px;align-self:center;width:100%">
+    <h2>VÀO PHÒNG</h2>
+    <label>Tên của bạn</label>
+    <input id="ten-vao" type="text" placeholder="Nhập tên..." maxlength="16"/>
+    <label style="margin-top:.7rem">Mã phòng</label>
+    <input id="ma-vao" type="text" placeholder="ABCD" maxlength="4" oninput="this.value=this.value.toUpperCase()"/>
+    <button class="btn btn-gold" onclick="vaoPhong()">Vào phòng</button>
   </div>
-
-  <!-- MÀN HÌNH NHẬN VAI -->
-  <div id="man-hinh-vai">
-    <div id="vai-icon" class="vai-icon"></div>
-    <h2 id="vai-ten"></h2>
-    <p id="vai-mo-ta"></p>
-  </div>
-
 </main>
 
+<!-- ══ PHÒNG CHỜ ══ -->
+<main id="lobby-screen" class="screen">
+  <div class="lobby-info">
+    <div class="dot"></div>
+    <span id="lobby-status">Đang chờ người chơi...</span>
+  </div>
+  <div class="card">
+    <div class="room-header">
+      <div>
+        <h2 id="lobby-title">Phòng chờ</h2>
+        <span class="copy-hint">Nhấn mã để sao chép và chia sẻ</span>
+      </div>
+      <span class="room-code" id="room-code" onclick="saoChepMa()" title="Sao chép"></span>
+    </div>
+    <div id="player-grid" class="player-grid"></div>
+    <button id="btn-ready" class="btn btn-gold btn-sm" onclick="doiReady()" style="width:auto;margin-top:.8rem">✋ Sẵn sàng</button>
+    <button id="btn-start" class="btn btn-red btn-sm" onclick="batDauGame()" style="display:none;width:auto;margin-top:.8rem;margin-left:.5rem">⚔️ Bắt đầu ván đấu</button>
+  </div>
+  <div class="chat-box">
+    <h3>💬 PHÒNG CHỜ</h3>
+    <div id="lobby-chat" class="chat-msgs"></div>
+    <div class="chat-input">
+      <input id="lobby-msg" type="text" placeholder="Nhắn tin..." maxlength="120" onkeydown="if(event.key==='Enter')guiTin('lobby')"/>
+      <button class="btn btn-red" onclick="guiTin('lobby')">Gửi</button>
+    </div>
+  </div>
+</main>
+
+<!-- ══ GAME ══ -->
+<main id="game-screen" class="screen">
+  <div id="phase-banner" class="phase-banner dem">
+    <div class="phase-title" id="phase-title">🌙 Đêm thứ 1</div>
+    <div class="phase-sub" id="phase-sub">Cả làng chìm vào giấc ngủ...</div>
+  </div>
+
+  <div class="game-layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="my-role-box">
+        <div class="role-icon" id="my-role-icon">❓</div>
+        <div class="role-name" id="my-role-name">Chờ phân vai...</div>
+        <div class="role-phe" id="my-role-phe"></div>
+        <div class="role-desc" id="my-role-desc"></div>
+      </div>
+      <div class="alive-box">
+        <h3>👥 NGƯỜI CHƠI</h3>
+        <div id="alive-list" class="alive-list"></div>
+      </div>
+    </div>
+
+    <!-- Main panel -->
+    <div class="main-panel">
+      <!-- Hành động đêm -->
+      <div id="action-box" class="action-box" style="display:none">
+        <h3 id="action-title">🌙 Hành động</h3>
+        <div class="action-desc" id="action-desc"></div>
+        <div id="action-grid" class="action-grid"></div>
+        <div id="action-extra"></div>
+        <button class="btn btn-red btn-sm" onclick="xacNhanHanhDong()" id="btn-confirm-action">Xác nhận</button>
+        <div class="action-timer" id="action-timer"></div>
+      </div>
+
+      <!-- Bỏ phiếu ngày -->
+      <div id="vote-box" class="vote-box" style="display:none">
+        <h3>⚖️ BỎ PHIẾU TREO CỔ</h3>
+        <div id="vote-grid" class="vote-grid"></div>
+        <div class="vote-status" id="vote-status"></div>
+        <button class="btn btn-red btn-sm" onclick="boPhieu()" id="btn-vote" style="margin-top:.6rem">Bỏ phiếu</button>
+        <button id="btn-end-discussion" class="btn btn-gray btn-sm" onclick="ketThucThaoLuan()" style="display:none;margin-top:.4rem">Kết thúc thảo luận (Host)</button>
+      </div>
+
+      <!-- Phù thủy đặc biệt -->
+      <div id="witch-box" class="action-box" style="display:none">
+        <h3>🧙 PHÙ THỦY — Chọn hành động</h3>
+        <div id="witch-desc" class="action-desc"></div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
+          <button id="btn-witch-save" class="btn btn-green btn-sm" onclick="phuThuyHanh('cuu')">💊 Cứu nạn nhân</button>
+          <button id="btn-witch-kill" class="btn btn-red btn-sm" onclick="phuThuyChon()">☠️ Dùng thuốc độc</button>
+          <button class="btn btn-gray btn-sm" onclick="phuThuyHanh('bo_qua')">⏭ Bỏ qua</button>
+        </div>
+        <div id="witch-kill-list" class="action-grid" style="margin-top:.6rem;display:none"></div>
+        <button id="btn-witch-kill-confirm" class="btn btn-red btn-sm" onclick="phuThuyHanh('doc')" style="display:none;margin-top:.4rem">Xác nhận dùng thuốc độc</button>
+      </div>
+
+      <!-- Chat game -->
+      <div class="chat-box" style="flex:1">
+        <h3 id="game-chat-title">💬 THẢO LUẬN</h3>
+        <div id="game-chat" class="chat-msgs"></div>
+        <div class="chat-input">
+          <input id="game-msg" type="text" placeholder="Nhắn tin..." maxlength="200" onkeydown="if(event.key==='Enter')guiTin('game')"/>
+          <button class="btn btn-red" onclick="guiTin('game')">Gửi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ══ POPUP KẾT THÚC ══ -->
+<div id="end-overlay" class="overlay">
+  <div class="popup">
+    <div class="p-icon" id="end-icon">🏆</div>
+    <h2 id="end-title">Ván đấu kết thúc!</h2>
+    <p id="end-desc"></p>
+    <div class="role-reveal" id="end-roles"></div>
+    <button class="btn btn-red" onclick="location.reload()">🔄 Chơi lại</button>
+  </div>
+</div>
+
+<!-- ══ POPUP THÔNG TIN RIÊNG ══ -->
+<div id="info-popup" class="info-popup" style="display:none">
+  <h3 id="info-title"></h3>
+  <p id="info-body"></p>
+  <button class="btn btn-gray btn-sm close-btn" onclick="dongInfoPopup()">Đóng</button>
+</div>
+
+<!-- ══ POPUP SOI KẾT QUẢ ══ -->
+<div id="soi-popup" class="info-popup" style="display:none">
+  <h3 id="soi-title">🔮 Kết quả điều tra</h3>
+  <div id="soi-body"></div>
+  <button class="btn btn-gray btn-sm close-btn" onclick="dongSoiPopup()">Đóng</button>
+</div>
+
 <script>
-  const socket = io();
+const socket = io();
 
-  // Trạng thái client
-  let tenCuaToi = '';
-  let maPhongCuaToi = '';
-  let laHost = false;
+// ── State ──
+let tenCuaToi = '';
+let maPhong = '';
+let laHost = false;
+let vaiCuaToi = '';
+let dangSong = true;
+let phuThuyInfo = { coThuocCuu: true, coThuocGiet: true, nguoiBiGiet: null };
+let hanhDongDangChon = [];
+let hanhDongLoai = '';
+let phieuDaBau = null;
+let killList = [];
 
-  const moTaVai = {
-    '🐺 Ma Sói':   'Mỗi đêm, bạn và đồng đội chọn một dân làng để hạ thủ. Đừng để bị lộ!',
-    '🧙 Thầy Lang': 'Mỗi đêm, bạn có thể cứu một người khỏi bị giết — kể cả chính mình.',
-    '🔮 Tiên Tri':  'Mỗi đêm, bạn có thể điều tra một người và biết họ là Ma Sói hay không.',
-    '🧑 Dân Làng':  'Bạn không có kỹ năng đặc biệt, nhưng lá phiếu của bạn rất quan trọng!',
-  };
+const avatars = ['🧑','👩','🧔','👴','👩‍🦰','🧑‍🦱','👩‍🦳','👨‍🦲','🧑‍🦰','👩‍🦱','🧑‍🦳','👨‍🦰','🧕','👱','👲','🧙','🧝','🧛'];
 
-  // ── Tạo phòng ──────────────────────────────────────────
-  function taoPhong() {
-    const ten = document.getElementById('ten-tao').value.trim();
-    if (!ten) return hienLoi('Vui lòng nhập tên của bạn!');
-    tenCuaToi = ten;
-    socket.emit('tao_phong', { ten });
+// ── Utils ──
+function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function show(id){ document.getElementById(id).style.display='block' }
+function hide(id){ document.getElementById(id).style.display='none' }
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(name+'-screen').classList.add('active');
+}
+
+function hienLoi(msg){
+  const el = document.getElementById('entry-err');
+  el.textContent='⚠ '+msg; el.style.display='block';
+  setTimeout(()=>el.style.display='none',3500);
+}
+
+function addMsg(containerId, html, cls=''){
+  const c = document.getElementById(containerId);
+  if(!c) return;
+  const d = document.createElement('div');
+  d.className = 'msg'+(cls?' '+cls:'');
+  d.innerHTML = html;
+  c.appendChild(d);
+  c.scrollTop = c.scrollHeight;
+}
+
+// ── Entry ──
+function taoPhong(){
+  const ten = document.getElementById('ten-tao').value.trim();
+  if(!ten) return hienLoi('Nhập tên của bạn!');
+  tenCuaToi = ten;
+  socket.emit('tao_phong',{ten});
+}
+function vaoPhong(){
+  const ten = document.getElementById('ten-vao').value.trim();
+  const ma = document.getElementById('ma-vao').value.trim();
+  if(!ten) return hienLoi('Nhập tên của bạn!');
+  if(ma.length!==4) return hienLoi('Mã phòng phải 4 ký tự!');
+  tenCuaToi = ten; maPhong = ma;
+  socket.emit('vao_phong',{ten,maPhong:ma});
+}
+
+// ── Lobby ──
+function saoChepMa(){
+  navigator.clipboard.writeText(maPhong).then(()=>{
+    const el=document.getElementById('room-code');
+    const old=el.textContent; el.textContent='✓ SAO CHÉP';
+    setTimeout(()=>el.textContent=old,1500);
+  });
+}
+
+function doiReady(){
+  socket.emit('doi_ready');
+  const btn = document.getElementById('btn-ready');
+  btn.textContent = btn.textContent.includes('Sẵn sàng') ? '❌ Hủy sẵn sàng' : '✋ Sẵn sàng';
+}
+
+function batDauGame(){ socket.emit('bat_dau_game') }
+
+function guiTin(kenh){
+  const id = kenh==='lobby' ? 'lobby-msg' : 'game-msg';
+  const o = document.getElementById(id);
+  const nd = o.value.trim();
+  if(!nd) return;
+  socket.emit('gui_tin_nhan',{noiDung:nd});
+  o.value='';
+}
+
+// Cập nhật danh sách người chơi phòng chờ
+function capNhatLobby(players){
+  const grid = document.getElementById('player-grid');
+  grid.innerHTML='';
+  players.forEach((p,i)=>{
+    const div=document.createElement('div');
+    const isMe = p.ten===tenCuaToi;
+    div.className='player-card'+(p.ready?' ready':'')+(isMe?' me':'');
+    div.innerHTML=`<div class="ava">${avatars[i%avatars.length]}</div>
+      <div class="name">${escH(p.ten)}</div>
+      <div class="status">${p.isHost?'⭐ Chủ phòng':p.ready?'✅ Sẵn sàng':'⏳ Chờ...'}</div>`;
+    grid.appendChild(div);
+  });
+  // Slot trống
+  const trang = Math.max(0,5-players.length);
+  for(let i=0;i<trang;i++){
+    const d=document.createElement('div');
+    d.className='slot-empty'; d.textContent='Chờ...';
+    grid.appendChild(d);
   }
+  // Status bar
+  const tatCaReady = players.every(p=>p.ready||p.isHost);
+  const duNguoi = players.length>=5;
+  document.getElementById('lobby-status').textContent=
+    `${players.length} người — ${duNguoi?'đủ người':'cần ít nhất 5'} — ${tatCaReady&&duNguoi?'sẵn sàng!':'chờ sẵn sàng...'}`;
+  // Nút bắt đầu
+  const btnStart = document.getElementById('btn-start');
+  btnStart.style.display = (laHost&&duNguoi&&tatCaReady)?'inline-block':'none';
+}
 
-  // ── Vào phòng ──────────────────────────────────────────
-  function vaoPhong() {
-    const ten = document.getElementById('ten-vao').value.trim();
-    const ma  = document.getElementById('ma-vao').value.trim();
-    if (!ten) return hienLoi('Vui lòng nhập tên của bạn!');
-    if (ma.length !== 4) return hienLoi('Mã phòng phải có 4 ký tự!');
-    tenCuaToi = ten;
-    socket.emit('vao_phong', { ten, maPhong: ma });
+// ── Game Screen ──
+function capNhatDanhSach(players){
+  const list = document.getElementById('alive-list');
+  list.innerHTML='';
+  players.forEach((p,i)=>{
+    const div=document.createElement('div');
+    div.className='alive-item'+(p.song?'':' dead');
+    div.dataset.id=p.id;
+    div.dataset.ten=p.ten;
+    div.innerHTML=`<span class="ai">${avatars[i%avatars.length]}</span>
+      <span class="an">${escH(p.ten)}${p.ten===tenCuaToi?' (bạn)':''}</span>
+      <span class="vote-count" id="vc-${escH(p.id)}"></span>`;
+    list.appendChild(div);
+  });
+}
+
+function setPhase(isNight, ngay){
+  const banner=document.getElementById('phase-banner');
+  const title=document.getElementById('phase-title');
+  const sub=document.getElementById('phase-sub');
+  if(isNight){
+    banner.className='phase-banner dem';
+    title.textContent=`🌙 Đêm thứ ${ngay}`;
+    sub.textContent='Thực hiện hành động đêm...';
+    document.getElementById('game-chat-title').textContent='🌙 ĐÊM — Kênh tối';
+  } else {
+    banner.className='phase-banner ngay';
+    title.textContent=`☀️ Ngày thứ ${ngay}`;
+    sub.textContent='Thảo luận và tìm ra ma sói!';
+    document.getElementById('game-chat-title').textContent='☀️ NGÀY — Thảo luận';
   }
+}
 
-  // ── Bắt đầu game ───────────────────────────────────────
-  function batDauGame() {
-    socket.emit('bat_dau_game');
-  }
+// ── Hành động đêm ──
+let actionCallback = null;
+function hienHanhDong(data){
+  hide('vote-box'); hide('witch-box');
+  const box = document.getElementById('action-box');
+  box.style.display='block';
+  document.getElementById('action-title').textContent=`${data.icon} ${data.vai}`;
+  document.getElementById('action-desc').textContent=data.huongDan;
+  hanhDongLoai=data.loai;
+  hanhDongDangChon=[];
 
-  // ── Chat ───────────────────────────────────────────────
-  function guiTin() {
-    const o = document.getElementById('o-chat');
-    const nd = o.value.trim();
-    if (!nd) return;
-    socket.emit('gui_tin_nhan', { noiDung: nd });
-    o.value = '';
-  }
+  const grid=document.getElementById('action-grid');
+  grid.innerHTML='';
+  (data.danhSach||[]).forEach(p=>{
+    const btn=document.createElement('div');
+    btn.className='action-target';
+    btn.textContent=p.ten;
+    btn.dataset.id=p.id;
+    btn.onclick=()=>chonMucTieu(btn,p.id,data.soChon||1);
+    grid.appendChild(btn);
+  });
 
-  // ── Sao chép mã phòng ──────────────────────────────────
-  function saoChepMa() {
-    navigator.clipboard.writeText(maPhongCuaToi).then(() => {
-      const el = document.getElementById('hien-ma-phong');
-      const old = el.textContent;
-      el.textContent = '✓ ĐÃ SAO CHÉP';
-      setTimeout(() => el.textContent = old, 1500);
-    });
-  }
+  // Timer
+  let secs=30;
+  const timerEl=document.getElementById('action-timer');
+  timerEl.textContent=`Còn ${secs}s...`;
+  const t=setInterval(()=>{
+    secs--;
+    timerEl.textContent=secs>0?`Còn ${secs}s...`:'Hết giờ!';
+    if(secs<=0) clearInterval(t);
+  },1000);
+}
 
-  // ── Hiển thị lỗi ───────────────────────────────────────
-  function hienLoi(msg) {
-    const el = document.getElementById('thong-bao-loi');
-    el.textContent = '⚠ ' + msg;
-    el.style.display = 'block';
-    setTimeout(() => el.style.display = 'none', 3500);
-  }
-
-  // ── Cập nhật lưới người chơi ───────────────────────────
-  const avatars = ['🧑','👩','🧔','👴','👩‍🦰','🧑‍🦱','👩‍🦳','👨‍🦲','🧑‍🦰','👩‍🦱','🧑‍🦳','👨‍🦰'];
-
-  function capNhatLuoi(players) {
-    const luoi = document.getElementById('luoi-nguoi-choi');
-    luoi.innerHTML = '';
-
-    players.forEach((p, i) => {
-      const div = document.createElement('div');
-      div.className = 'the-nguoi-choi' + (p.ten === tenCuaToi ? ' la-toi' : '');
-      div.innerHTML = `
-        <div class="avatar">${avatars[i % avatars.length]}</div>
-        <div class="ten">${escHtml(p.ten)}</div>
-        <div class="badge">${p.isHost ? '⭐ Chủ phòng' : (p.ten === tenCuaToi ? 'Bạn' : '')}</div>
-      `;
-      luoi.appendChild(div);
-    });
-
-    // Slot trống
-    const soTrang = Math.max(0, 4 - players.length);
-    for (let i = 0; i < soTrang; i++) {
-      const div = document.createElement('div');
-      div.className = 'slot-trong';
-      div.textContent = 'Chờ...';
-      luoi.appendChild(div);
+function chonMucTieu(btn, id, soChon){
+  if(soChon===1){
+    document.querySelectorAll('.action-target').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    hanhDongDangChon=[id];
+  } else {
+    if(btn.classList.contains('selected')){
+      btn.classList.remove('selected');
+      hanhDongDangChon=hanhDongDangChon.filter(x=>x!==id);
+    } else if(hanhDongDangChon.length<soChon){
+      btn.classList.add('selected');
+      hanhDongDangChon.push(id);
     }
-
-    // Cập nhật status
-    document.getElementById('status-text')
-      .textContent = `${players.length} người — cần ít nhất 4 để bắt đầu`;
-
-    // Hiện nút bắt đầu nếu là host và đủ người
-    const btn = document.getElementById('btn-bat-dau');
-    btn.style.display = (laHost && players.length >= 4) ? 'block' : 'none';
   }
+}
 
-  function themTin(html, laHeThong = false) {
-    const ds = document.getElementById('danh-sach-tin');
-    const div = document.createElement('div');
-    div.className = 'tin-nhan' + (laHeThong ? ' he-thong' : '');
-    div.innerHTML = html;
-    ds.appendChild(div);
-    ds.scrollTop = ds.scrollHeight;
+function xacNhanHanhDong(){
+  if(hanhDongDangChon.length===0) return;
+  socket.emit('gui_hanh_dong',{loai:hanhDongLoai,chon:hanhDongDangChon,maPhong});
+  hide('action-box');
+  addMsg('game-chat','<em>— Bạn đã thực hiện hành động —</em>','sys');
+}
+
+// ── Phù thủy ──
+function hienPhuThuy(data){
+  hide('action-box'); hide('vote-box');
+  phuThuyInfo=data;
+  const box=document.getElementById('witch-box');
+  box.style.display='block';
+  const desc=document.getElementById('witch-desc');
+  desc.textContent=data.nguoiBiGiet
+    ?`${data.nguoiBiGiet} sẽ bị giết đêm nay. Bạn muốn làm gì?`
+    :'Không ai bị sói tấn công đêm nay.';
+  const btnSave=document.getElementById('btn-witch-save');
+  const btnKill=document.getElementById('btn-witch-kill');
+  btnSave.style.display=data.coThuocCuu&&data.nguoiBiGiet?'inline-block':'none';
+  btnKill.style.display=data.coThuocGiet?'inline-block':'none';
+}
+
+function phuThuyChon(){
+  const grid=document.getElementById('witch-kill-list');
+  grid.style.display='grid';
+  grid.innerHTML='';
+  (phuThuyInfo.danhSach||[]).forEach(p=>{
+    const btn=document.createElement('div');
+    btn.className='action-target';
+    btn.textContent=p.ten; btn.dataset.id=p.id;
+    btn.onclick=()=>{
+      document.querySelectorAll('#witch-kill-list .action-target').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      killList=[p.id];
+      show('btn-witch-kill-confirm');
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function phuThuyHanh(loai){
+  if(loai==='cuu') socket.emit('gui_hanh_dong',{loai:'phu_thuy_cuu',chon:[],maPhong});
+  else if(loai==='doc') socket.emit('gui_hanh_dong',{loai:'phu_thuy_doc',chon:killList,maPhong});
+  else socket.emit('gui_hanh_dong',{loai:'phu_thuy_bo_qua',chon:[],maPhong});
+  hide('witch-box');
+  addMsg('game-chat','<em>— Phù thủy đã quyết định —</em>','sys');
+}
+
+// ── Bỏ phiếu ngày ──
+function hienBauPhieu(data){
+  hide('action-box'); hide('witch-box');
+  const box=document.getElementById('vote-box');
+  box.style.display='block';
+  phieuDaBau=null;
+  const grid=document.getElementById('vote-grid');
+  grid.innerHTML='';
+  (data.danhSach||[]).forEach(p=>{
+    const btn=document.createElement('div');
+    btn.className='vote-target';
+    btn.textContent=p.ten; btn.dataset.id=p.id;
+    btn.onclick=()=>{
+      document.querySelectorAll('.vote-target').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      phieuDaBau=p.id;
+    };
+    grid.appendChild(btn);
+  });
+  document.getElementById('vote-status').textContent='Chọn người muốn treo cổ...';
+  document.getElementById('btn-end-discussion').style.display=laHost?'inline-block':'none';
+  // Timer thảo luận
+  let secs=data.thoiGianThaoLuan||120;
+  const t=setInterval(()=>{
+    secs--;
+    if(secs<=0){ clearInterval(t); }
+  },1000);
+}
+
+function boPhieu(){
+  if(!phieuDaBau) return;
+  socket.emit('bo_phieu',{mucTieuId:phieuDaBau});
+  document.getElementById('vote-status').textContent='✅ Đã bỏ phiếu!';
+  document.getElementById('btn-vote').disabled=true;
+}
+
+function ketThucThaoLuan(){ socket.emit('ket_thuc_thao_luan') }
+
+// ── Popup thông tin riêng ──
+function hienInfoPopup(tieuDe, noidung){
+  document.getElementById('info-title').textContent=tieuDe;
+  document.getElementById('info-body').textContent=noidung;
+  show('info-popup');
+}
+function dongInfoPopup(){ hide('info-popup') }
+
+function hienSoiPopup(ten, laSoi, vai){
+  const body=document.getElementById('soi-body');
+  body.innerHTML=`<div class="soi-result ${laSoi?'la-soi':''}">
+    <strong>${escH(ten)}</strong> là <strong>${escH(vai)}</strong>
+    ${laSoi?'🐺 — MA SÓI!':'🧑 — Dân làng'}
+  </div>`;
+  show('soi-popup');
+}
+function dongSoiPopup(){ hide('soi-popup') }
+
+// ── Kết thúc game ──
+function hienKetThuc(data){
+  const overlay=document.getElementById('end-overlay');
+  const danThang = data.pheThang==='dan';
+  const soiThang = data.pheThang==='soi';
+  document.getElementById('end-icon').textContent=danThang?'🏆':soiThang?'🐺':'🎭';
+  document.getElementById('end-title').textContent=data.tenPhe+' CHIẾN THẮNG!';
+  document.getElementById('end-desc').textContent=
+    `Người thắng: ${(data.nguoiThang||[]).join(', ')}`;
+  const rolesEl=document.getElementById('end-roles');
+  rolesEl.innerHTML='';
+  (data.tatCaVai||[]).forEach(p=>{
+    const d=document.createElement('div');
+    d.className='rv';
+    d.textContent=`${p.icon} ${p.ten}: ${p.vai}`;
+    rolesEl.appendChild(d);
+  });
+  overlay.classList.add('show');
+}
+
+// ══ SOCKET EVENTS ══
+socket.on('vao_phong_thanh_cong',({maPhong:ma,isHost})=>{
+  maPhong=ma; laHost=isHost;
+  document.getElementById('room-code').textContent=ma;
+  document.getElementById('lobby-title').textContent=isHost?'Phòng của bạn':'Phòng chờ';
+  showScreen('lobby');
+});
+
+socket.on('cap_nhat_phong',({players,soNguoi})=>{
+  capNhatLobby(players);
+  if(document.getElementById('game-screen').classList.contains('active')){
+    capNhatDanhSach(players);
   }
+});
 
-  function escHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+socket.on('tin_nhan_moi',({ten,noiDung,thoiGian})=>{
+  const html=`<span class="who">${escH(ten)}</span> <span class="when">${thoiGian}</span><br>${escH(noiDung)}`;
+  const aktif=document.getElementById('game-screen').classList.contains('active');
+  addMsg(aktif?'game-chat':'lobby-chat',html);
+});
+
+socket.on('tin_nhan_he_thong',({msg,loai})=>{
+  const cls='sys '+(loai||'info');
+  const aktif=document.getElementById('game-screen').classList.contains('active');
+  addMsg(aktif?'game-chat':'lobby-chat',escH(msg),cls);
+});
+
+socket.on('tin_nhan_ma',({ten,noiDung,thoiGian})=>{
+  const html=`👻 <em>${escH(ten)}: ${escH(noiDung)}</em>`;
+  addMsg('game-chat',html,'ghost');
+});
+
+socket.on('game_bat_dau',({soNguoi,phanBo})=>{
+  showScreen('game');
+  addMsg('game-chat',`⚔️ Ván đấu bắt đầu với ${soNguoi} người — Sói: ${phanBo.soi} | Phe 3: ${phanBo.khac} | Dân: ${phanBo.dan}`,'sys ngay');
+});
+
+socket.on('nhan_vai',({vai,icon,mo_ta,phe})=>{
+  vaiCuaToi=vai;
+  document.getElementById('my-role-icon').textContent=icon;
+  document.getElementById('my-role-name').textContent=vai;
+  const pheTen={dan:'🧑 Phe Dân Làng',soi:'🐺 Phe Ma Sói',khac:'🎭 Phe Thứ Ba'};
+  document.getElementById('my-role-phe').textContent=pheTen[phe]||'';
+  document.getElementById('my-role-desc').textContent=mo_ta;
+  hienInfoPopup(`${icon} Vai trò của bạn: ${vai}`, mo_ta+(phe==='soi'?'\n\n⚠️ Đừng để lộ bạn là ma sói!':phe==='khac'?'\n\n⚠️ Bạn thuộc phe thứ ba với mục tiêu riêng!':''));
+});
+
+socket.on('yeu_cau_hanh_dong',(data)=>{ hienHanhDong(data) });
+socket.on('yeu_cau_phu_thuy',(data)=>{ hienPhuThuy(data) });
+socket.on('bat_dau_bau_phieu',(data)=>{ hienBauPhieu(data); hide('action-box'); hide('witch-box') });
+socket.on('thong_tin_rieng',({tieuDe,noidung})=>{ hienInfoPopup(tieuDe,noidung) });
+socket.on('thong_tin_soi',({boiSoi})=>{
+  hienInfoPopup('🐺 Bầy sói của bạn',`Đồng đội: ${boiSoi.join(', ')}`);
+});
+socket.on('ket_qua_soi',({ten,laSoi,vai})=>{ hienSoiPopup(ten,laSoi,vai) });
+socket.on('game_ket_thuc',(data)=>{ hienKetThuc(data) });
+
+socket.on('loi',(msg)=>{
+  const aktif=document.getElementById('game-screen').classList.contains('active');
+  if(aktif) addMsg('game-chat','⚠ '+escH(msg),'sys nguy');
+  else hienLoi(msg);
+});
+
+socket.on('tro_thanh_host',()=>{ laHost=true });
+
+// Gửi phiếu sói (khi đêm)
+document.addEventListener('click', e=>{
+  if(e.target.classList.contains('action-target') && hanhDongLoai==='soi_giet'){
+    // auto emit sau khi chọn
   }
+});
 
-  // ── Chuyển sang màn hình phòng ─────────────────────────
-  function hienPhong(maPhong, players, isHostParam) {
-    maPhongCuaToi = maPhong;
-    laHost = isHostParam;
-    document.getElementById('man-hinh-vao').style.display = 'none';
-    document.getElementById('man-hinh-phong').style.display = 'block';
-    document.getElementById('hien-ma-phong').textContent = maPhong;
-    document.getElementById('tieu-de-phong').textContent =
-      isHostParam ? 'Phòng của bạn' : 'Phòng chờ';
-    capNhatLuoi(players);
-    themTin(`— Bạn đã vào phòng <strong>${maPhong}</strong> —`, true);
-  }
-
-  // ── Socket events ───────────────────────────────────────
-  socket.on('vao_phong_thanh_cong', ({ maPhong, players, isHost }) => {
-    hienPhong(maPhong, players, isHost);
-  });
-
-  socket.on('nguoi_choi_moi', ({ players, ten }) => {
-    capNhatLuoi(players);
-    themTin(`— <strong>${escHtml(ten)}</strong> đã vào phòng —`, true);
-  });
-
-  socket.on('nguoi_choi_roi', ({ ten, players }) => {
-    capNhatLuoi(players);
-    themTin(`— <strong>${escHtml(ten)}</strong> đã rời phòng —`, true);
-  });
-
-  socket.on('tro_thanh_host', () => {
-    laHost = true;
-    document.getElementById('tieu-de-phong').textContent = 'Phòng của bạn';
-    themTin('— Bạn đã trở thành chủ phòng —', true);
-  });
-
-  socket.on('tin_nhan_moi', ({ ten, noiDung, thoiGian }) => {
-    const laToi = ten === tenCuaToi;
-    themTin(`<span class="nguoi">${escHtml(ten)}</span> 
-             <span class="gio">${thoiGian}</span><br>${escHtml(noiDung)}`);
-  });
-
-  socket.on('game_bat_dau', ({ players }) => {
-    themTin('— ⚔️ Ván đấu bắt đầu! Hãy chờ nhận vai —', true);
-  });
-
-  socket.on('nhan_vai', ({ vai }) => {
-    // Chuyển sang màn hình vai sau 1.5s
-    setTimeout(() => {
-      document.getElementById('man-hinh-phong').style.display = 'none';
-      const icon = vai.split(' ')[0];
-      const ten  = vai.split(' ').slice(1).join(' ');
-      document.getElementById('vai-icon').textContent = icon;
-      document.getElementById('vai-ten').textContent  = ten;
-      document.getElementById('vai-mo-ta').textContent = moTaVai[vai] || '';
-      document.getElementById('man-hinh-vai').style.display = 'block';
-    }, 1500);
-  });
-
-  socket.on('loi', (msg) => {
-    hienLoi(msg);
-  });
-
-  // Enter để vào phòng nhanh
-  document.getElementById('ten-tao').addEventListener('keydown', e => { if(e.key==='Enter') taoPhong(); });
-  document.getElementById('ma-vao').addEventListener('keydown', e => { if(e.key==='Enter') vaoPhong(); });
+// Enter shortcuts
+document.getElementById('ten-tao').addEventListener('keydown',e=>{ if(e.key==='Enter') taoPhong() });
+document.getElementById('ma-vao').addEventListener('keydown',e=>{ if(e.key==='Enter') vaoPhong() });
 </script>
 </body>
 </html>
