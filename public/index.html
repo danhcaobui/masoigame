@@ -599,6 +599,7 @@ let daVaoGame=false;
 let hanhDongLoai='',hanhDongChon=[],phieuDaBau=null;
 let witchData={},witchChon=null,witchLoai='';
 let kenhChat='tong',toiDangSong=true,gamePhase='';
+let wolfNames=new Set(),lastPlayers=[];
 let countdownInterval=null,skillTimerInterval=null;
 const AVA=['🧑','👩','🧔','👴','👩‍🦰','🧑‍🦱','👩‍🦳','👨‍🦲','🧑‍🦰','👩‍🦱','🧑‍🦳','👨‍🦰','🧕','👱','👲','🧙','🧝','🧛'];
 
@@ -767,7 +768,7 @@ function setPhase(phase,ngay,thoiGian){
     document.getElementById('moon-icon').style.display='inline';
     document.getElementById('sun-icon').style.display='none';
     document.getElementById('game-chat-title').textContent=T('nightChat');
-    hide('night-status-box');hide('vote-box');hide('day-controls');
+    hide('vote-box');hide('day-controls');
   }else{
     document.getElementById('phase-title').textContent=isVote?T('voteTitle2')(ngay):T('dayTitle')(ngay);
     document.getElementById('phase-sub').textContent=isVote?T('voteSub'):T('daySub');
@@ -790,12 +791,16 @@ function setPhase(phase,ngay,thoiGian){
 
 // ── Alive list ──
 function capNhatDanhSach(players){
+  lastPlayers=players;
   const list=document.getElementById('alive-list');
   list.innerHTML='';
   players.forEach((p,i)=>{
+    let ic=AVA[i%AVA.length];
+    if(!p.song)ic='👻';                                  // ai cũng thấy người chết là ma
+    else if(myPhe==='soi'&&wolfNames.has(p.ten))ic='🐺'; // sói nhận diện nhau
     const d=document.createElement('div');
     d.className='alive-item'+(p.song?'':' dead')+(p.lienLac===false?' offline':'');
-    d.innerHTML='<span class="ai">'+AVA[i%AVA.length]+'</span><span class="an">'+escH(p.ten)+(p.ten===tenCuaToi?' ★':'')+(p.lienLac===false?' 🔌':'')+'</span>';
+    d.innerHTML='<span class="ai">'+ic+'</span><span class="an">'+escH(p.ten)+(p.ten===tenCuaToi?' ★':'')+(p.lienLac===false?' 🔌':'')+'</span>';
     list.appendChild(d);
   });
 }
@@ -981,6 +986,7 @@ socket.on('khoi_phuc',(d)=>{
   maPhong=d.maPhong;laHost=d.isHost;daVaoGame=true;
   setRoleBox(d.vai,d.icon,d.mo_ta,d.phe);
   showScreen('game');
+  show('night-status-box');
   if(d.phase==='dem')setPhase('dem',d.ngay);
   else if(d.phase==='vote')setPhase('vote',d.ngay);
   else setPhase('ngay',d.ngay);
@@ -1024,6 +1030,9 @@ socket.on('tin_nhan_he_thong',({msg,loai})=>{
 socket.on('game_bat_dau',({soNguoi,phanBo})=>{
   daVaoGame=true;
   showScreen('game');
+  show('night-status-box');
+  document.getElementById('night-status-list').innerHTML=
+    '<div class="status-item"><span>🌘</span><span>'+(lang==='vi'?'Chưa có sự kiện — đêm đầu tiên đang diễn ra...':'No events yet — first night in progress...')+'</span></div>';
   addMsg('game-chat','⚔️ '+soNguoi+' '+(lang==='vi'?'người':'players')+' | 🐺'+phanBo.soi+' 🎭'+phanBo.khac+' 🧑'+phanBo.dan,'sys ngay');
 });
 
@@ -1046,6 +1055,11 @@ socket.on('thong_tin_rieng',({tieuDe,noidung})=>{
   document.getElementById('info-body').textContent=noidung;
   show('info-popup');
 });
+socket.on('danh_sach_soi',({ten})=>{
+  wolfNames=new Set(ten);
+  if(lastPlayers.length)capNhatDanhSach(lastPlayers);
+});
+
 socket.on('thong_tin_soi',({boiSoi})=>{
   document.getElementById('info-title').textContent='🐺 '+(lang==='vi'?'Bầy sói':'Wolf pack');
   document.getElementById('info-body').textContent=(lang==='vi'?'Đồng đội: ':'Team: ')+boiSoi.join(', ');

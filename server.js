@@ -177,6 +177,10 @@ function guiPromptDem(ma) {
   const dsKhac = me => song.filter(p => p.id !== me.id).map(p => ({ id: p.id, ten: p.ten }));
   const dsTatCa = () => song.map(p => ({ id: p.id, ten: p.ten }));
 
+  // Danh sách phe sói → cho icon nhận diện lẫn nhau
+  const phePack = song.filter(laSoiPhe);
+  phePack.forEach(p => rieng(p.id, 'danh_sach_soi', { ten: phePack.map(x => x.ten) }));
+
   // ── Thông tin tự động đêm 1 ──
   if (phong.ngay === 1) {
     const sinhDoi = song.filter(p => p.vai === 'Sinh đôi');
@@ -931,6 +935,7 @@ io.on('connection', (socket) => {
       if (VAI_TRO[cu.vai]?.phe === 'soi' && cu.song) {
         const boiSoi = nguoiSong(phong).filter(laSoiPhe).map(x => x.ten);
         rieng(cu.id, 'thong_tin_soi', { boiSoi });
+        rieng(cu.id, 'danh_sach_soi', { ten: boiSoi });
       }
       heThong(maPhong, `🔌 ${tenSach} đã kết nối lại.`, 'info');
       thongBaoPhong(maPhong);
