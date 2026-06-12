@@ -606,8 +606,8 @@ function ketQuaDem(ma) {
     nhatKy.unshift({ icon: '🌙', msg: 'Đêm yên bình, không ai thiệt mạng.' });
   } else {
     tuVong.forEach(p => {
-      heThong(ma, `💀 ${p.ten} đã chết trong đêm.`, 'nguy');
-      nhatKy.unshift({ icon: '💀', msg: `${p.ten} đã qua đời trong đêm tối.` });
+      heThong(ma, `💀 ${p.ten} (${VAI_TRO[p.vai]?.icon} ${p.vai}) đã chết trong đêm.`, 'nguy');
+      nhatKy.unshift({ icon: '💀', msg: `${p.ten} (${VAI_TRO[p.vai]?.icon} ${p.vai}) đã qua đời trong đêm tối.` });
     });
   }
   phong.nhatKyDem = { ngay: phong.ngay, suKien: nhatKy };
@@ -634,7 +634,7 @@ function xuLyDayChuyen(phong, tuVong, nhatKy) {
         const kia = phong.players.find(p => p.id === kiaId);
         if (kia?.song) {
           kia.song = false; tuVong.push(kia); thayDoi = true;
-          nhatKy.push({ icon: '💔', msg: `${kia.ten} chết theo người mình yêu.` });
+          nhatKy.push({ icon: '💔', msg: `${kia.ten} (${VAI_TRO[kia.vai]?.icon} ${kia.vai}) chết theo người mình yêu.` });
         }
       }
       // Thợ săn ngắm sẵn
@@ -642,7 +642,7 @@ function xuLyDayChuyen(phong, tuVong, nhatKy) {
         const muc = phong.players.find(p => p.id === nguoiChet.thoSanNgam);
         if (muc?.song) {
           muc.song = false; tuVong.push(muc); thayDoi = true;
-          nhatKy.push({ icon: '🏹', msg: `${nguoiChet.ten} kéo theo ${muc.ten} trước khi chết.` });
+          nhatKy.push({ icon: '🏹', msg: `${nguoiChet.ten} kéo theo ${muc.ten} (${VAI_TRO[muc.vai]?.icon} ${muc.vai}) trước khi chết.` });
         }
       }
       // Doppelganger
@@ -662,7 +662,7 @@ function xuLyDayChuyen(phong, tuVong, nhatKy) {
         const dire = phong.players.find(p => p.id === phong.direWolfBan.soi);
         if (dire?.song) {
           dire.song = false; tuVong.push(dire); thayDoi = true;
-          nhatKy.push({ icon: '🦴', msg: `${dire.ten} gục ngã theo người đồng hành.` });
+          nhatKy.push({ icon: '🦴', msg: `${dire.ten} (${VAI_TRO[dire.vai]?.icon} ${dire.vai}) gục ngã theo người đồng hành.` });
         }
       }
       // Đứa con hoang
