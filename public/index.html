@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ma Sói Online</title>
+<title>Ma Sói</title>
 <script src="/socket.io/socket.io.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
@@ -27,6 +27,8 @@ body.is-day{background:var(--day-bg)}
 #lang-screen h1{font-family:'Rajdhani',sans-serif;font-size:3rem;font-weight:700;letter-spacing:.1em}
 #lang-screen h1 span{color:var(--accent)}
 #lang-screen p{color:var(--dim)}
+.lang-credit{margin-top:.6rem;font-size:.82rem;color:var(--dim);font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:.05em}
+.lang-credit span{color:var(--accent2)}
 .lang-btns{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
 .lang-btn{padding:1rem 2.5rem;background:var(--card);border:2px solid var(--border2);border-radius:12px;color:var(--txt);font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:700;cursor:pointer;transition:all .2s}
 .lang-btn:hover{border-color:var(--accent);color:var(--accent)}
@@ -37,7 +39,9 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.9r
 .phase-icon{font-size:2.3rem;transition:all .8s;filter:drop-shadow(0 0 14px currentColor)}
 #moon-icon{color:#a080ff;display:none}
 #sun-icon{color:#f7c948;display:none}
-.header-right{min-width:60px}
+.header-right{min-width:60px;text-align:right}
+#btn-home{background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:1.1rem;padding:.35rem .6rem;cursor:pointer;transition:all .2s}
+#btn-home:hover{border-color:var(--accent);transform:translateY(-1px)}
 
 .screen{display:none;flex:1;padding:1.2rem 1rem 3rem;max-width:1000px;margin:0 auto;width:100%}
 .screen.active{display:flex;flex-direction:column;gap:1rem}
@@ -222,7 +226,11 @@ input::placeholder{color:var(--dim)}
 <div id="credit">cre — <span>Cao-Hoang</span></div>
 
 <div id="lang-screen">
-  <h1>MA <span>SÓI</span></h1>
+  <div style="text-align:center">
+    <h1>MA <span>SÓI</span></h1>
+    <h1 style="font-size:1.6rem;color:var(--dim2);margin-top:.2rem">WERE<span>WOLF</span></h1>
+    <div class="lang-credit">cre — <span>Cao-Hoang</span></div>
+  </div>
   <p>Chọn ngôn ngữ / Choose language</p>
   <div class="lang-btns">
     <button class="lang-btn" onclick="chonNgon('vi')">🇻🇳 Tiếng Việt</button>
@@ -231,12 +239,12 @@ input::placeholder{color:var(--dim)}
 </div>
 
 <header>
-  <div class="header-title">MA <span>SÓI</span> ONLINE</div>
+  <div class="header-title" id="header-title">MA <span>SÓI</span></div>
   <div style="display:flex;align-items:center;gap:.5rem">
     <span id="moon-icon" class="phase-icon">🌙</span>
     <span id="sun-icon" class="phase-icon">☀️</span>
   </div>
-  <div class="header-right"></div>
+  <div class="header-right"><button id="btn-home" onclick="veHome()" title="Home">🏠</button></div>
 </header>
 
 <!-- ENTRY -->
@@ -488,6 +496,10 @@ function applyLang(){
     const v=LANG[lang][el.dataset.i18n];
     if(typeof v==='string')el.textContent=v;
   });
+  // Tiêu đề header + tab trình duyệt theo ngôn ngữ
+  document.getElementById('header-title').innerHTML =
+    lang==='vi' ? 'MA <span>SÓI</span>' : 'WERE<span>WOLF</span>';
+  document.title = lang==='vi' ? 'Ma Sói' : 'Werewolf';
 }
 
 // ══ TABS ══
@@ -632,6 +644,13 @@ function doiKenh(k){
   kenhChat=k;
   document.getElementById('ch-tong').classList.toggle('active',k==='tong');
   document.getElementById('ch-rieng').classList.toggle('active',k==='rieng');
+}
+function veHome(){
+  if(maPhong){
+    const msg=lang==='vi'?'Về trang chủ? Bạn sẽ rời phòng hiện tại.':'Go home? You will leave the current room.';
+    if(!confirm(msg))return;
+  }
+  location.reload();
 }
 function thiTruongTietLo(){
   socket.emit('thi_truong_tiet_lo');
