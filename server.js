@@ -1074,46 +1074,60 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ── Chat ──
-  socket.on('gui_tin_nhan', ({ noiDung, kenh }) => {
+  // ── Chat 4 kênh: tổng / riêng 1-1 / sói / ma ──
+  socket.on('gui_tin_nhan', ({ noiDung, kenh, denId }) => {
     if (!noiDung?.trim() || !socket.maPhong) return;
     const phong = layPhong(socket.maPhong);
     if (!phong) return;
     const p = phong.players.find(x => x.id === socket.id);
     if (!p) return;
     const gio = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const nd = noiDung.trim();
 
     if (phong.nguoiBiCamNoi === socket.id) {
       return socket.emit('loi', 'Bạn đang bị nguyền không thể nói chuyện!');
     }
 
-    // Người chết → kênh ma
+    // Người chết → chỉ kênh ma, chỉ người chết thấy nhau
     if (!p.song) {
-      io.to(socket.maPhong).emit('tin_nhan_ma', { ten: p.ten, noiDung: noiDung.trim(), thoiGian: gio });
-      return;
-    }
-
-    // Ban đêm: chỉ sói chat riêng
-    if (phong.trangThai === 'dem') {
-      if (laSoiPhe(p)) {
-        phong.players.filter(x => x.song && laSoiPhe(x)).forEach(x => {
-          io.to(x.id).emit('tin_nhan_soi', { ten: p.ten, noiDung: noiDung.trim(), thoiGian: gio });
-        });
-      } else {
-        socket.emit('loi', 'Ban đêm cả làng đang ngủ, không thể nói chuyện!');
-      }
-      return;
-    }
-
-    // Ban ngày: sói chọn kênh riêng
-    if (kenh === 'rieng' && laSoiPhe(p)) {
-      phong.players.filter(x => x.song && laSoiPhe(x)).forEach(x => {
-        io.to(x.id).emit('tin_nhan_soi', { ten: p.ten, noiDung: noiDung.trim(), thoiGian: gio });
+      phong.players.filter(x => !x.song).forEach(x => {
+        io.to(x.id).emit('tin_nhan_ma', { ten: p.ten, noiDung: nd, thoiGian: gio });
       });
       return;
     }
 
-    io.to(socket.maPhong).emit('tin_nhan_moi', { ten: p.ten, noiDung: noiDung.trim(), thoiGian: gio });
+    // Phòng chờ → kênh tổng
+    if (phong.trangThai === 'cho') {
+      io.to(socket.maPhong).emit('tin_nhan_moi', { ten: p.ten, noiDung: nd, thoiGian: gio });
+      return;
+    }
+
+    // Kênh sói: cả ngày lẫn đêm, chỉ sói còn sống
+    if (kenh === 'soi') {
+      if (!laSoiPhe(p)) return socket.emit('loi', 'Bạn không thuộc bầy sói!');
+      phong.players.filter(x => x.song && laSoiPhe(x)).forEach(x => {
+        io.to(x.id).emit('tin_nhan_soi', { ten: p.ten, noiDung: nd, thoiGian: gio });
+      });
+      return;
+    }
+
+    // Ban đêm: người thường không chat được kênh nào khác
+    if (phong.trangThai === 'dem') {
+      return socket.emit('loi', 'Ban đêm cả làng đang ngủ, không thể nói chuyện!');
+    }
+
+    // Kênh riêng 1-1 (ban ngày): gửi cho mình + người nhận
+    if (kenh === 'rieng') {
+      const den = phong.players.find(x => x.id === denId && x.song);
+      if (!den) return socket.emit('loi', 'Người nhận không hợp lệ!');
+      [socket.id, den.id].forEach(id => {
+        io.to(id).emit('tin_nhan_rieng', { tu: p.ten, den: den.ten, noiDung: nd, thoiGian: gio });
+      });
+      return;
+    }
+
+    // Kênh tổng
+    io.to(socket.maPhong).emit('tin_nhan_moi', { ten: p.ten, noiDung: nd, thoiGian: gio });
   });
 
   // ── Disconnect: giữ chỗ nếu game đang chạy ──

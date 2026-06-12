@@ -127,6 +127,14 @@ input::placeholder{color:var(--dim)}
 .msg.sys.nguy{color:var(--red)}
 .msg.sys.canh_bao{color:#f0a030}
 .msg.ghost{color:#7060a0;font-style:italic}
+.msg.whisper{color:#c8a8ff}
+.chat-row{display:flex;gap:.8rem;flex:1;min-height:0}
+.chat-row .night-status{width:230px;flex-shrink:0;max-height:340px;overflow-y:auto;display:none}
+#channel-bar{display:flex;gap:.35rem;padding:.4rem .8rem;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
+.ch-btn{padding:.28rem .7rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--dim2);font-size:.76rem;cursor:pointer;font-weight:600;transition:all .2s}
+.ch-btn.active{border-color:var(--accent);color:var(--accent)}
+.ch-btn.locked{opacity:.35;text-decoration:line-through;cursor:not-allowed}
+#whisper-target{background:var(--bg);border:1px solid var(--border);color:var(--txt);border-radius:6px;font-size:.76rem;padding:.25rem .4rem;max-width:130px}
 .chat-input{display:flex;border-top:1px solid var(--border)}
 .chat-input input{flex:1;border:none;border-radius:0;background:transparent;color:var(--txt);font-size:.85rem;padding:.55rem .8rem}
 .chat-input input:focus{outline:none}
@@ -215,6 +223,8 @@ input::placeholder{color:var(--dim)}
 .soi-result.la-soi{background:rgba(255,71,87,.08);border-color:var(--red)}
 
 @media(max-width:640px){
+  .chat-row{flex-direction:column}
+  .chat-row .night-status{width:100%}
   .game-layout{grid-template-columns:1fr}
   .sidebar{order:2}.main-panel{order:1}
   .tab-btn{font-size:.78rem;padding:.5rem .4rem}
@@ -361,11 +371,6 @@ input::placeholder{color:var(--dim)}
     </div>
 
     <div class="main-panel">
-      <div id="night-status-box" class="night-status" style="display:none">
-        <h3 data-i18n="nightLog">📜 SỰ KIỆN ĐÊM QUA</h3>
-        <div id="night-status-list"></div>
-      </div>
-
       <div id="action-box" class="action-box" style="display:none">
         <h3 id="action-title"></h3>
         <div class="action-desc" id="action-desc"></div>
@@ -397,16 +402,25 @@ input::placeholder{color:var(--dim)}
         <button class="btn btn-gray btn-sm" onclick="ketThucThaoLuan()" id="btn-end-discussion" data-i18n="endDisc">⏩ Bỏ qua thảo luận (Host)</button>
       </div>
 
-      <div class="chat-box" style="flex:1">
-        <h3 id="game-chat-title">💬</h3>
-        <div id="channel-toggle" style="display:none;padding:.4rem 1rem;border-bottom:1px solid var(--border)">
-          <button class="rf-btn active" id="ch-tong" onclick="doiKenh('tong')">💬 <span data-i18n="chPublic">Kênh tổng</span></button>
-          <button class="rf-btn" id="ch-rieng" onclick="doiKenh('rieng')">🐺 <span data-i18n="chWolf">Kênh riêng</span></button>
+      <div class="chat-row">
+        <div class="chat-box" style="flex:1">
+          <h3 id="game-chat-title">💬</h3>
+          <div id="channel-bar">
+            <button class="ch-btn active" id="ch-tong" onclick="doiKenh('tong')">💬 <span data-i18n="chPublic">Tổng</span></button>
+            <button class="ch-btn" id="ch-rieng" onclick="doiKenh('rieng')">🤫 <span data-i18n="chWhisper">Riêng</span></button>
+            <button class="ch-btn" id="ch-soi" onclick="doiKenh('soi')">🐺 <span data-i18n="chWolf">Sói</span></button>
+            <button class="ch-btn" id="ch-ma" onclick="doiKenh('ma')">👻 <span data-i18n="chGhost">Ma</span></button>
+            <select id="whisper-target" style="display:none"></select>
+          </div>
+          <div id="game-chat" class="chat-msgs"></div>
+          <div class="chat-input">
+            <input id="game-msg" type="text" maxlength="200" placeholder="..." onkeydown="if(event.key==='Enter')guiTin('game')"/>
+            <button class="btn btn-accent" onclick="guiTin('game')" data-i18n="send">Gửi</button>
+          </div>
         </div>
-        <div id="game-chat" class="chat-msgs"></div>
-        <div class="chat-input">
-          <input id="game-msg" type="text" maxlength="200" placeholder="..." onkeydown="if(event.key==='Enter')guiTin('game')"/>
-          <button class="btn btn-accent" onclick="guiTin('game')" data-i18n="send">Gửi</button>
+        <div id="night-status-box" class="night-status" style="display:none">
+          <h3 data-i18n="nightLog">📜 SỰ KIỆN ĐÊM QUA</h3>
+          <div id="night-status-list"></div>
         </div>
       </div>
     </div>
@@ -452,7 +466,7 @@ const LANG = {
     witchTitle:'Phù Thủy',witchDesc:'Chọn dùng thuốc — Cứu: người được chọn sẽ sống nếu bị sói cắn đêm nay.',
     witchSave:'Cứu',witchKill:'Thuốc độc',witchSkip:'Bỏ qua',
     mayorReveal:'Tiết lộ Thị Trưởng',
-    chPublic:'Kênh tổng',chWolf:'Kênh riêng',
+    chPublic:'Tổng',chWhisper:'Riêng',chWolf:'Sói',chGhost:'Ma',
     discuss:'☀️ NGÀY — Thảo luận',nightChat:'🌙 ĐÊM — Kênh sói',voteChat:'⚖️ VOTE',
     phe:{dan:'Phe Dân Làng',soi:'Phe Ma Sói',khac:'Phe Thứ Ba'},
     nightTitle:n=>'🌙 Đêm thứ '+n,dayTitle:n=>'☀️ Ngày thứ '+n,voteTitle2:n=>'⚖️ Bỏ phiếu — Ngày '+n,
@@ -473,7 +487,7 @@ const LANG = {
     witchTitle:'Witch',witchDesc:'Use a potion — Heal: chosen player survives if bitten tonight.',
     witchSave:'Heal',witchKill:'Poison',witchSkip:'Skip',
     mayorReveal:'Reveal Mayor',
-    chPublic:'Public',chWolf:'Wolf channel',
+    chPublic:'Public',chWhisper:'Whisper',chWolf:'Wolves',chGhost:'Ghost',
     discuss:'☀️ DAY — Discussion',nightChat:'🌙 NIGHT — Wolf channel',voteChat:'⚖️ VOTE',
     phe:{dan:'Villagers',soi:'Werewolves',khac:'Third Party'},
     nightTitle:n=>'🌙 Night '+n,dayTitle:n=>'☀️ Day '+n,voteTitle2:n=>'⚖️ Vote — Day '+n,
@@ -584,7 +598,7 @@ let tenCuaToi='',maPhong='',laHost=false,vaiCuaToi='',myPhe='';
 let daVaoGame=false;
 let hanhDongLoai='',hanhDongChon=[],phieuDaBau=null;
 let witchData={},witchChon=null,witchLoai='';
-let kenhChat='tong';
+let kenhChat='tong',toiDangSong=true,gamePhase='';
 let countdownInterval=null,skillTimerInterval=null;
 const AVA=['🧑','👩','🧔','👴','👩‍🦰','🧑‍🦱','👩‍🦳','👨‍🦲','🧑‍🦰','👩‍🦱','🧑‍🦳','👨‍🦰','🧕','👱','👲','🧙','🧝','🧛'];
 
@@ -638,12 +652,46 @@ function batDauGame(){socket.emit('bat_dau_game')}
 function guiTin(kenh){
   const o=document.getElementById(kenh==='lobby'?'lobby-msg':'game-msg');
   const nd=o.value.trim();if(!nd)return;
-  socket.emit('gui_tin_nhan',{noiDung:nd,kenh:kenhChat});o.value='';
+  const denId=kenhChat==='rieng'?document.getElementById('whisper-target').value:undefined;
+  socket.emit('gui_tin_nhan',{noiDung:nd,kenh:kenhChat,denId});o.value='';
+}
+const KENH=['tong','rieng','soi','ma'];
+function datKenh(k){
+  kenhChat=k;
+  KENH.forEach(x=>document.getElementById('ch-'+x).classList.toggle('active',x===k));
+  document.getElementById('whisper-target').style.display=(k==='rieng')?'inline-block':'none';
 }
 function doiKenh(k){
-  kenhChat=k;
-  document.getElementById('ch-tong').classList.toggle('active',k==='tong');
-  document.getElementById('ch-rieng').classList.toggle('active',k==='rieng');
+  if(document.getElementById('ch-'+k).classList.contains('locked'))return;
+  datKenh(k);
+}
+// Khóa/mở kênh theo vai + trạng thái sống + pha
+function capNhatKenh(){
+  const lock=(id,b)=>document.getElementById('ch-'+id).classList.toggle('locked',b);
+  const isNight=gamePhase==='dem';
+  if(!toiDangSong){
+    lock('tong',true);lock('rieng',true);lock('soi',true);lock('ma',false);
+    if(kenhChat!=='ma')datKenh('ma');
+    return;
+  }
+  lock('ma',true);
+  lock('soi',myPhe!=='soi');
+  lock('tong',isNight);
+  lock('rieng',isNight);
+  if(isNight){
+    if(myPhe==='soi'&&kenhChat!=='soi')datKenh('soi');
+  }else{
+    if(kenhChat==='ma'||(kenhChat==='soi'&&myPhe!=='soi'))datKenh('tong');
+  }
+}
+function capNhatWhisper(players){
+  const sel=document.getElementById('whisper-target');
+  const cur=sel.value;
+  sel.innerHTML='';
+  players.filter(p=>p.song&&p.ten!==tenCuaToi).forEach(p=>{
+    const o=document.createElement('option');o.value=p.id;o.textContent=p.ten;sel.appendChild(o);
+  });
+  if(cur&&[...sel.options].some(o=>o.value===cur))sel.value=cur;
 }
 function veHome(){
   if(maPhong){
@@ -707,6 +755,7 @@ function startSkillTimer(seconds){
 
 // ── Phase ──
 function setPhase(phase,ngay,thoiGian){
+  gamePhase=phase;
   const banner=document.getElementById('phase-banner');
   const isNight=phase==='dem';
   const isVote=phase==='vote';
@@ -736,6 +785,7 @@ function setPhase(phase,ngay,thoiGian){
     }
   }
   if(thoiGian)startCountdown(thoiGian);
+  capNhatKenh();
 }
 
 // ── Alive list ──
@@ -774,7 +824,7 @@ function setRoleBox(vai,icon,mo_ta,phe){
   document.getElementById('my-role-name').textContent=vai;
   document.getElementById('my-role-phe').textContent=T('phe')[phe]||'';
   document.getElementById('my-role-desc').textContent=mo_ta;
-  if(phe==='soi')document.getElementById('channel-toggle').style.display='block';
+  capNhatKenh();
 }
 
 // ── Action ──
@@ -939,7 +989,13 @@ socket.on('khoi_phuc',(d)=>{
 
 socket.on('cap_nhat_phong',({players})=>{
   capNhatLobby(players);
-  if(document.getElementById('game-screen').classList.contains('active'))capNhatDanhSach(players);
+  const me=players.find(p=>p.ten===tenCuaToi);
+  if(me)toiDangSong=me.song;
+  if(document.getElementById('game-screen').classList.contains('active')){
+    capNhatDanhSach(players);
+    capNhatWhisper(players);
+    capNhatKenh();
+  }
 });
 
 socket.on('tin_nhan_moi',({ten,noiDung,thoiGian})=>{
@@ -950,6 +1006,10 @@ socket.on('tin_nhan_moi',({ten,noiDung,thoiGian})=>{
 
 socket.on('tin_nhan_soi',({ten,noiDung,thoiGian})=>{
   addMsg('game-chat','🐺 <span class="who" style="color:#ff6b6b">'+escH(ten)+'</span> <span class="when">'+thoiGian+'</span><br>'+escH(noiDung));
+});
+
+socket.on('tin_nhan_rieng',({tu,den,noiDung,thoiGian})=>{
+  addMsg('game-chat','🤫 <span class="who" style="color:#c8a8ff">'+escH(tu)+' → '+escH(den)+'</span> <span class="when">'+thoiGian+'</span><br>'+escH(noiDung),'whisper');
 });
 
 socket.on('tin_nhan_ma',({ten,noiDung})=>{
