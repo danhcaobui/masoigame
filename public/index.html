@@ -599,7 +599,7 @@ let daVaoGame=false;
 let hanhDongLoai='',hanhDongChon=[],phieuDaBau=null;
 let witchData={},witchChon=null,witchLoai='';
 let kenhChat='tong',toiDangSong=true,gamePhase='';
-let wolfNames=new Set(),lastPlayers=[];
+let wolfNames=new Set(),lastPlayers=[],knownIcons={};
 let countdownInterval=null,skillTimerInterval=null;
 const AVA=['🧑','👩','🧔','👴','👩‍🦰','🧑‍🦱','👩‍🦳','👨‍🦲','🧑‍🦰','👩‍🦱','🧑‍🦳','👨‍🦰','🧕','👱','👲','🧙','🧝','🧛'];
 
@@ -798,6 +798,7 @@ function capNhatDanhSach(players){
     let ic=AVA[i%AVA.length];
     if(!p.song)ic='👻';                                  // ai cũng thấy người chết là ma
     else if(myPhe==='soi'&&wolfNames.has(p.ten))ic='🐺'; // sói nhận diện nhau
+    else if(knownIcons[p.ten])ic=knownIcons[p.ten];      // vai đã biết qua kỹ năng
     const d=document.createElement('div');
     d.className='alive-item'+(p.song?'':' dead')+(p.lienLac===false?' offline':'');
     d.innerHTML='<span class="ai">'+ic+'</span><span class="an">'+escH(p.ten)+(p.ten===tenCuaToi?' ★':'')+(p.lienLac===false?' 🔌':'')+'</span>';
@@ -1055,6 +1056,11 @@ socket.on('thong_tin_rieng',({tieuDe,noidung})=>{
   document.getElementById('info-body').textContent=noidung;
   show('info-popup');
 });
+socket.on('danh_dau',({ten,icon})=>{
+  knownIcons[ten]=icon;
+  if(lastPlayers.length)capNhatDanhSach(lastPlayers);
+});
+
 socket.on('danh_sach_soi',({ten})=>{
   wolfNames=new Set(ten);
   if(lastPlayers.length)capNhatDanhSach(lastPlayers);

@@ -184,16 +184,22 @@ function guiPromptDem(ma) {
   // ── Thông tin tự động đêm 1 ──
   if (phong.ngay === 1) {
     const sinhDoi = song.filter(p => p.vai === 'Sinh đôi');
-    if (sinhDoi.length >= 2) sinhDoi.forEach(p => rieng(p.id, 'thong_tin_rieng', {
-      tieuDe: '👯 Sinh Đôi',
-      noidung: `Người sinh đôi của bạn: ${sinhDoi.filter(x => x.id !== p.id).map(x => x.ten).join(', ')}`,
-    }));
+    if (sinhDoi.length >= 2) sinhDoi.forEach(p => {
+      rieng(p.id, 'thong_tin_rieng', {
+        tieuDe: '👯 Sinh Đôi',
+        noidung: `Người sinh đôi của bạn: ${sinhDoi.filter(x => x.id !== p.id).map(x => x.ten).join(', ')}`,
+      });
+      sinhDoi.filter(x => x.id !== p.id).forEach(x => rieng(p.id, 'danh_dau', { ten: x.ten, icon: '👯' }));
+    });
 
     const beholder = song.find(p => p.vai === 'Beholder');
     const tienTri = song.find(p => p.vai === 'Tiên tri');
-    if (beholder && tienTri) rieng(beholder.id, 'thong_tin_rieng', {
-      tieuDe: '👁️ Beholder', noidung: `Tiên tri của làng là: ${tienTri.ten}`,
-    });
+    if (beholder && tienTri) {
+      rieng(beholder.id, 'thong_tin_rieng', {
+        tieuDe: '👁️ Beholder', noidung: `Tiên tri của làng là: ${tienTri.ten}`,
+      });
+      rieng(beholder.id, 'danh_dau', { ten: tienTri.ten, icon: '🔮' });
+    }
 
     const baTuoc = song.find(p => p.vai === 'Bá tước');
     if (baTuoc) {
@@ -424,7 +430,18 @@ function ketQuaDem(ma) {
 
   // 1. Đêm 1: lưu các lựa chọn dài hạn
   for (const [actorId, act] of Object.entries(hd)) {
-    if (act.loai === 'cupid' && act.chon?.length === 2) phong.tinhNhan = act.chon;
+    if (act.loai === 'cupid' && act.chon?.length === 2) {
+      phong.tinhNhan = act.chon;
+      const [a, b] = act.chon.map(id => tim(id));
+      if (a && b) {
+        rieng(a.id, 'thong_tin_rieng', { tieuDe: '💘 Tình Nhân', noidung: `Bạn và ${b.ten} là tình nhân — một người chết, người kia chết theo!` });
+        rieng(b.id, 'thong_tin_rieng', { tieuDe: '💘 Tình Nhân', noidung: `Bạn và ${a.ten} là tình nhân — một người chết, người kia chết theo!` });
+        rieng(a.id, 'danh_dau', { ten: b.ten, icon: '💘' });
+        rieng(b.id, 'danh_dau', { ten: a.ten, icon: '💘' });
+        rieng(actorId, 'danh_dau', { ten: a.ten, icon: '💘' });
+        rieng(actorId, 'danh_dau', { ten: b.ten, icon: '💘' });
+      }
+    }
     if (act.loai === 'hoodlum' && act.chon?.length === 2) phong.hoodlumMucTieu = act.chon;
     if (act.loai === 'doppel' && act.chon?.[0]) phong.doppelTarget = { doi: actorId, muc: act.chon[0] };
     if (act.loai === 'dire_wolf' && act.chon?.[0]) phong.direWolfBan = { soi: actorId, ban: act.chon[0] };
@@ -1008,27 +1025,27 @@ io.on('connection', (socket) => {
 
     // Kết quả soi trả NGAY
     const tim = id => phong.players.find(x => x.id === id);
-    if (loai === 'tien_tri_soi' && chon?.[0]) {
+    if ((loai === 'tien_tri_soi' || loai === 'phap_su') && chon?.[0]) {
       const m = tim(chon[0]);
       if (m) {
         const laSoi = m.vai === 'Người hoá sói' ? true : (m.vai === 'Kẻ phản bội' ? false : laSoiPhe(m));
         rieng(socket.id, 'ket_qua_soi', { ten: m.ten, laSoi, vai: laSoi ? 'Ma Sói' : 'Dân Làng' });
-      }
-    }
-    if (loai === 'phap_su' && chon?.[0]) {
-      const m = tim(chon[0]);
-      if (m) {
-        const laSoi = m.vai === 'Người hoá sói' ? true : (m.vai === 'Kẻ phản bội' ? false : laSoiPhe(m));
-        rieng(socket.id, 'ket_qua_soi', { ten: m.ten, laSoi, vai: laSoi ? 'Ma Sói' : 'Dân Làng' });
+        rieng(socket.id, 'danh_dau', { ten: m.ten, icon: laSoi ? '🐺' : '✅' });
       }
     }
     if (loai === 'tien_tri_hq' && chon?.[0]) {
       const m = tim(chon[0]);
-      if (m) rieng(socket.id, 'ket_qua_soi', { ten: m.ten, laSoi: laSoiPhe(m), vai: laSoiPhe(m) ? 'Phe Sói' : 'Phe Dân' });
+      if (m) {
+        rieng(socket.id, 'ket_qua_soi', { ten: m.ten, laSoi: laSoiPhe(m), vai: laSoiPhe(m) ? 'Phe Sói' : 'Phe Dân' });
+        rieng(socket.id, 'danh_dau', { ten: m.ten, icon: laSoiPhe(m) ? '🐺' : '✅' });
+      }
     }
     if (loai === 'thay_boi' && chon?.[0]) {
       const m = tim(chon[0]);
-      if (m) rieng(socket.id, 'ket_qua_soi', { ten: m.ten, laSoi: laSoiPhe(m), vai: m.vai });
+      if (m) {
+        rieng(socket.id, 'ket_qua_soi', { ten: m.ten, laSoi: laSoiPhe(m), vai: m.vai });
+        rieng(socket.id, 'danh_dau', { ten: m.ten, icon: VAI_TRO[m.vai]?.icon || '🎴' });
+      }
     }
     if (loai === 'tham_tu' && chon?.[0]) {
       const song = nguoiSong(phong);
